@@ -1,8 +1,9 @@
 Name:           greek
-Version:        1.0
+Version:        1.0.1
 Cabal-Version:  >= 1.14
 Author:         Richard Cobbe
 Synopsis:       Library for processing Greek text
+Extra-source-files:    HISTORY
 Build-Type:     Simple
 License:        AllRightsReserved
 Copyright:      (c) 2012 Richard Cobbe
@@ -26,6 +27,8 @@ Library
     Data.Greek.Parser,
     Data.Greek.UnicodeData
     Data.Greek.Word
+  Other-modules:
+    Data.Greek.Private.Normalize
 
 Test-Suite greek-tests
   main-is: RunTests.hs
