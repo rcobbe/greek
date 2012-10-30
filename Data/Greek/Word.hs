@@ -15,12 +15,14 @@ module Data.Greek.Word(
   -- * Constructors
   makeLetter,
   makeWord,
+  concat,
   validLetter,
   baseChars
   )
 where
 
-import Data.List
+import Prelude hiding (concat)
+import Data.List hiding (concat)
 import Data.Map (Map, (!))
 import qualified Data.Map as Map
 import Data.Set (Set)
@@ -200,6 +202,10 @@ makeLetter base breathing accent iotaSub macron =
 --   later.
 makeWord :: [Letter] -> Word
 makeWord = Word
+
+-- | Concatenates two 'Word' values.
+concat :: Word -> Word -> Word
+concat (Word xs) (Word ys) = Word (xs ++ ys)
 
 -- | Recognizes valid combinations of base letters and diacriticals
 validLetter :: Macron -> Char -> Breathing -> Accent -> IotaSub -> Bool
