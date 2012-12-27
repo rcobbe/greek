@@ -4,7 +4,7 @@
 --   either in the input syntax (with leading underscore to indicate long
 --   vowels) or in LaTeX syntax (with leading backslash and underscore to
 --   indicate long vowels).  Both syntaxes are rendered in normalized order;
---   see "Greek.Normalize" for details.
+--   see "Data.Greek.Normalize" for details.
 
 module Data.Greek.Output(
   letterToUnicode,
