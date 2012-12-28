@@ -1,3 +1,7 @@
+Changes since 1.1.0:
+
+  - Better documentation for Data.Greek.Word.makeLetter.
+
 New in 1.1.0:
 
   - Included a missing private module (Data.Greek.Private.Normalize)

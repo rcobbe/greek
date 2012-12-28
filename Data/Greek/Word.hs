@@ -184,7 +184,9 @@ renderBase c = letterTable ! c
                         ('Ω', "Omega")]
 
 -- | Letter constructor.  Ensures that the combination of properties is valid
---   according to the rules of Greek orthography.
+--   according to the rules of Greek orthography.  If the combination is
+--   invalid, calls 'error'.  For a more robust way to deal with user input,
+--   use the functions in "Data.Greek.Parser".
 makeLetter :: Char -> Breathing -> Accent -> IotaSub -> Macron -> Letter
 makeLetter base breathing accent iotaSub macron =
   if validLetter macron base breathing accent iotaSub
