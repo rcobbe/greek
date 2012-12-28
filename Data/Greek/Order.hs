@@ -1,6 +1,6 @@
 module Data.Greek.Order() where
 
-import Data.Char (toLower, isLower)
+import qualified Data.Char as Char
 import Data.Function (on)
 
 import Data.Greek.Word
@@ -24,7 +24,7 @@ instance Ord Word where
                       listCompare (compare `on` getBreathing) xs ys,
                       listCompare (compare `on` getAccent) xs ys,
                       listCompare (compare `on` getMacron) xs ys,
-                      listCompare (caseCompare `on` getBase) xs ys]
+                      listCompare caseCompare xs ys]
 
 -- | Compares two Greek letters (without diacriticals), ignoring case.  We
 --   consider final sigma to be less than medial sigma.  If two words have the
@@ -36,8 +36,8 @@ instance Ord Word where
 --   result.
 baseCompare :: Char -> Char -> Ordering
 baseCompare x y =
-  let lowerX = toLower x
-      lowerY = toLower y
+  let lowerX = Char.toLower x
+      lowerY = Char.toLower y
   in if lowerX == lowerY
      then EQ
      else
@@ -53,7 +53,7 @@ baseCompare x y =
 
 -- | Compares two characters strictly on the basis of capitalization, ignoring
 --   the underlying char.  Uppercase is less than lowercase.
-caseCompare :: Char -> Char -> Ordering
+caseCompare :: Letter -> Letter -> Ordering
 caseCompare c1 c2 =
   compare (isLower c1) (isLower c2)
 

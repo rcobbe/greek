@@ -104,7 +104,7 @@ instance Arbitrary MacronWords where
 instance Arbitrary CaseWords where
   arbitrary =
     do w1 <- arbitrary
-       w2 <- updateWord w1 updateCase [toLower, toUpper]
+       w2 <- updateWord w1 updateCase [toLowerExceptSigma, toUpperExceptSigma]
        return (CaseWords w1 w2)
   shrink (CaseWords w1 w2) =
     case (getLetters w1, getLetters w2) of
@@ -154,13 +154,13 @@ updateCase :: LetterProps -> (Char -> Char) -> LetterProps
 updateCase props f = props { base = f (base props) }
 
 -- | Converts all letters except sigma to lowercase, if not already lowercase.
-toLower :: Char -> Char
-toLower l =
+toLowerExceptSigma :: Char -> Char
+toLowerExceptSigma l =
   if l == capSigma then l else Char.toLower l
 
 -- | Converts all letters except sigma to uppercase, if not uppercase already.
-toUpper :: Char -> Char
-toUpper l =
+toUpperExceptSigma :: Char -> Char
+toUpperExceptSigma l =
   if l == baseFinalSigma || l == baseMedialSigma then l else Char.toUpper l
 
 letterToProps :: Letter -> LetterProps

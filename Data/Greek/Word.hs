@@ -17,11 +17,16 @@ module Data.Greek.Word(
   makeWord,
   concat,
   validLetter,
-  baseChars
+  baseChars,
+  isUpper,
+  isLower,
+  toUpper,
+  toLower
   )
 where
 
 import Prelude hiding (concat)
+import qualified Data.Char as Char
 import Data.List hiding (concat)
 import Data.Map (Map, (!))
 import qualified Data.Map as Map
@@ -261,3 +266,22 @@ validAccent c Circumflex = c `elem` "αηιυωΑΗΙΥΩ"
 validIotaSub :: Char -> IotaSub -> Bool
 validIotaSub _ NoIotaSub = True
 validIotaSub c IotaSub   = c `elem` "αηωΑΗΩ"
+
+-- | Selects upper-case 'Letter's.
+isUpper :: Letter -> Bool
+isUpper c = Char.isUpper (base c)
+
+-- | Selects lower-case 'Letter's.
+isLower :: Letter -> Bool
+isLower c = Char.isLower (base c)
+
+-- | Converts a 'Letter' to the corresponding uppercase 'Letter', preserving
+--   all diacriticals.  Leaves uppercase 'Letter's unchanged.
+toUpper :: Letter -> Letter
+toUpper l = l { base = Char.toUpper (base l) }
+
+-- | Converts a 'Letter' to the corresponding lowercase 'Letter', preserving
+--   all diacriticals.  Leaves lowercase 'Letter's unchanged.  Converts capital
+--   sigma to lowercase /medial/ sigma.
+toLower :: Letter -> Letter
+toLower l = l { base = Char.toLower (base l) }

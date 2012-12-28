@@ -4,6 +4,8 @@ Changes since 1.1.0:
 
   - Data.Greek.Word.makeWord now aborts if the input is empty.
 
+  - Added Data.Greek.Word.isUpper, isLower, toUpper, toLower.
+
 New in 1.1.0:
 
   - Included a missing private module (Data.Greek.Private.Normalize)
