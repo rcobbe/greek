@@ -50,7 +50,7 @@ instance Arbitrary Word where
   -- (e.g., breathing only on initial letter, final sigma only at end) are not
   -- guaranteed, but each individual letter is guaranteed to be valid.
   arbitrary =
-    do (letters :: [Letter]) <- listOf arbitrary
+    do (letters :: [Letter]) <- listOf1 arbitrary
        return $ makeWord letters
 
 instance Arbitrary Letter where
@@ -74,7 +74,7 @@ instance Arbitrary PrefixWords where
   arbitrary =
     do w <- arbitrary
        let letters = getLetters w
-       prefixSize <- elements [0..length letters]
+       prefixSize <- elements [1..length letters]
        return $ PrefixWords (makeWord (take prefixSize letters)) w
 
 instance Arbitrary IotaSubWords where

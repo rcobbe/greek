@@ -203,7 +203,10 @@ makeLetter base breathing accent iotaSub macron =
 --   constructor to allow us the freedom of changing the 'Word' representation
 --   later.
 makeWord :: [Letter] -> Word
-makeWord = Word
+makeWord letters =
+  if null letters
+  then error "makeWord: argument cannot be empty"
+  else Word letters
 
 -- | Concatenates two 'Word' values.
 concat :: Word -> Word -> Word

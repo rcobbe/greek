@@ -2,6 +2,8 @@ Changes since 1.1.0:
 
   - Better documentation for Data.Greek.Word.makeLetter.
 
+  - Data.Greek.Word.makeWord now aborts if the input is empty.
+
 New in 1.1.0:
 
   - Included a missing private module (Data.Greek.Private.Normalize)
