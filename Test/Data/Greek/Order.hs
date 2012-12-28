@@ -42,7 +42,7 @@ qc1000 :: (QC.Testable a) => a -> HU.Test
 qc1000 = testQuickCheck (QC.stdArgs { QC.maxSuccess = 1000 })
 
 tests =
-  "Test.Greek.OrderQC" ~: [
+  "Test.Data.Greek.Order" ~: [
     "ordering respects equality" ~: qc1000 propOrderRespectsEquality,
 
     "ordering is reflexive" ~: qc1000 propReflexive,
