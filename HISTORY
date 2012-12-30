@@ -1,3 +1,7 @@
+Changes since 1.2.0:
+
+  - add Haddock comments to Data.Greek.Parser.
+
 New in 1.2.0:
 
   - Better documentation for Data.Greek.Word.makeLetter.
