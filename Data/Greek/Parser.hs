@@ -1,9 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Parses external representations of Greek Text.  The input should be
+--   Unicode text, containing only Greek letters and combining diacriticals, in
+--   the format defined by 'Data.Greek.Normalize.normalize'.  We also allow
+--   underscores immediately before certain vowels, to indicate that the vowel
+--   is long.  (The underscore corresponds to the presence of a macron in the
+--   written representation, and not to vowel length -- so, for instance,
+--   \"_ά\" denotes a long alpha with an acute accent, but \"_ᾶ\" results in a
+--   parse error, because the macron is redundant with the circumflex.)
 module Data.Greek.Parser(word,
                          letter,
                          literalWord,
                          literalLetter) where
+
+-- XXX remove "g" prefix on function names
 
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -20,6 +30,7 @@ import Data.Greek.Word
 import Data.Greek.Normalize
 import Data.Greek.UnicodeData
 
+-- | Set of those base characters that denote vowels.
 baseVowels :: Set Char
 baseVowels =
   Set.fromList
@@ -27,13 +38,16 @@ baseVowels =
    baseOmega, capAlpha, capEpsilon, capEta, capIota, capOmicron, capUpsilon,
    capOmega]
 
+-- | Set of those base characters that denote consonants.
 baseConsonants :: Set Char
 baseConsonants = Set.difference baseChars baseVowels
 
+-- | Set of those base characters that denote consonants, without rho.
 nonRhoConsonants :: Set Char
 nonRhoConsonants =
   Set.difference baseConsonants (Set.fromList [baseRho, capRho])
 
+-- | Set of characters that denote Greek combining diacriticals.
 combiningDiacriticals :: Set Char
 combiningDiacriticals =
   Set.fromList [combSmooth, combRough,
@@ -41,12 +55,15 @@ combiningDiacriticals =
                 combDialytika,
                 combIotaSub]
 
+-- | Parse a single 'Word' from the input.
 word :: GenParser st Word
 word =
   (do letters <- many1 (try letter)
       return $ makeWord letters)
   <?> "greek word"
 
+-- | Parse a single 'Letter' from the input, including leading underscore and
+--   trailing combining diacriticals, if appropriate.
 letter :: GenParser st Letter
 letter =
   (gConsonant
@@ -175,9 +192,15 @@ optIotaSub =
 diacritical :: GenParser st Char
 diacritical = PCh.oneOf (Set.elems combiningDiacriticals)
 
+-- | Normalize the input and then attempt to parse it as a 'Word'.  Aborts on
+--   parse errors, so this is intended for expressing literal 'Word's in code,
+--   and not for parsing user input.
 literalWord :: Text -> Word
 literalWord = makeLiteralParser word
 
+-- | Normalize the input and then parse it as a 'Letter'.  As with
+--   'literalWord', this aborts on parse errors, so use only for literal
+--   'Letter's in code.
 literalLetter :: Text -> Letter
 literalLetter = makeLiteralParser letter
 
