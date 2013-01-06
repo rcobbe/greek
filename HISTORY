@@ -2,6 +2,9 @@ Changes since 1.2.0:
 
   - add Haddock comments to Data.Greek.Parser.
 
+  - better error messages on seeing a vowel with a macron and a circumflex,
+    and on seeing an alpha with a macron and an iota subscript.
+
 New in 1.2.0:
 
   - Better documentation for Data.Greek.Word.makeLetter.

@@ -15,6 +15,7 @@ module Data.Greek.Parser(word,
 
 -- XXX remove "g" prefix on function names
 
+import Control.Monad
 import Data.Set (Set)
 import qualified Data.Set as Set
 
@@ -93,7 +94,10 @@ gAlpha =
   (do PCh.char '_'
       alpha <- PCh.oneOf [baseAlpha, capAlpha]
       br <- optBreathing
-      ac <- optAccNoCirc
+      ac <- optAccentAfterMacron
+      iotaSub <- optIotaSub
+      when (iotaSub == IotaSub)
+        (fail "iota subscript and macron may not occur together")
       notFollowedBy diacritical
       return $ makeLetter alpha br ac NoIotaSub Macron)
   <|> (do alpha <- PCh.oneOf [baseAlpha, capAlpha]
@@ -125,7 +129,7 @@ gIota =
   (do PCh.char '_'
       iota <- PCh.oneOf [baseIota, capIota]
       br <- optBreathing
-      ac <- optAccNoCirc
+      ac <- optAccentAfterMacron
       notFollowedBy diacritical
       return $ makeLetter iota br ac NoIotaSub Macron)
   <|> (do iota <- PCh.oneOf [baseIota, capIota]
@@ -147,7 +151,7 @@ gUpsilon =
   (do PCh.char '_'
       upsilon <- PCh.oneOf [baseUpsilon, capUpsilon]
       br <- optBreathing
-      ac <- optAccNoCirc
+      ac <- optAccentAfterMacron
       notFollowedBy diacritical
       return $ makeLetter upsilon br ac NoIotaSub Macron)
   <|> (do upsilon <- PCh.oneOf [baseUpsilon, capUpsilon]
@@ -184,13 +188,25 @@ optAccent =
   <|> (PCh.char combCirc >> return Circumflex)
   <|> return NoAccent
 
+-- | Parse an optional combining accent on a vowel with an explicit macron.
+--   Behaves like 'optAccNoCirc', but fails with a detailed error message
+--   upon parsing a circumflex.
+optAccentAfterMacron :: GenParser st Accent
+optAccentAfterMacron =
+  do a <- optAccent
+     when (a == Circumflex)
+       (fail "circumflex and macron may not occur together")
+     return a
+
 optIotaSub :: GenParser st IotaSub
 optIotaSub =
   (PCh.char combIotaSub >> return IotaSub)
   <|> return NoIotaSub
 
 diacritical :: GenParser st Char
-diacritical = PCh.oneOf (Set.elems combiningDiacriticals)
+diacritical =
+  (PCh.oneOf (Set.elems combiningDiacriticals))
+  <?> "combining diacritical"
 
 -- | Normalize the input and then attempt to parse it as a 'Word'.  Aborts on
 --   parse errors, so this is intended for expressing literal 'Word's in code,

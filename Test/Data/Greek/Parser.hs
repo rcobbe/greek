@@ -6,6 +6,8 @@ import qualified Data.Text.Lazy as Text
 import qualified Data.Set as Set
 import Test.HUnit
 
+import Text.Parsec.Error as PError
+
 import Test.Utils
 import Test.Data.Greek.Utils
 import Data.Greek.Word
@@ -16,7 +18,7 @@ import Data.Greek.UnicodeData
 
 tests =
   "Greek.Parser" ~:
-  [allLetterTests, otherLetterTests, wordTests]
+  [allLetterTests, otherLetterTests, wordTests, errorTests]
 
 allLetterTests =
   "parsing individual letters" ~:
@@ -56,3 +58,21 @@ wordTests =
 
    "greek text with trailing non-greek characters" ~:
    assertNormalizedParse (GP.literalWord "οὐ", "k") (parseRest GP.word) "οὐk"]
+
+errorTests =
+  let circError =
+        (PError.Message "circumflex and macron may not occur together")
+  in
+   "customized parsing errors" ~:
+  ["alpha with macron and circumflex" ~:
+   assertParseError GP.letter (normalize "_ᾶ") circError,
+
+   "alpha with macron and iota subscript" ~:
+   assertParseError GP.letter (normalize "_ᾳ")
+   (PError.Message "iota subscript and macron may not occur together"),
+
+   "iota with macron & circumflex" ~:
+   assertParseError GP.letter (normalize "_ῖ") circError,
+
+   "upsilon with macron and circumflex" ~:
+   assertParseError GP.letter (normalize "_ῦ") circError]
