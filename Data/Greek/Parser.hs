@@ -13,8 +13,6 @@ module Data.Greek.Parser(word,
                          literalWord,
                          literalLetter) where
 
--- XXX remove "g" prefix on function names
-
 import Control.Monad
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -67,18 +65,18 @@ word =
 --   trailing combining diacriticals, if appropriate.
 letter :: GenParser st Letter
 letter =
-  (gConsonant
-   <|> try gAlpha
-   <|> gEpsilon
-   <|> gEta
-   <|> try gIota
-   <|> gOmicron
-   <|> try gUpsilon
-   <|> gOmega)
+  (consonant
+   <|> try alpha
+   <|> epsilon
+   <|> eta
+   <|> try iota
+   <|> omicron
+   <|> try upsilon
+   <|> omega)
   <?> "greek letter"
 
-gConsonant :: GenParser st Letter
-gConsonant =
+consonant :: GenParser st Letter
+consonant =
   ((do baseChar <- PCh.oneOf (Set.elems nonRhoConsonants)
        notFollowedBy diacritical
        return $ makeLetter baseChar NoBreathing NoAccent NoIotaSub NoMacron)
@@ -89,8 +87,8 @@ gConsonant =
        return $ makeLetter rho br NoAccent NoIotaSub NoMacron))
   <?> "greek consonant"
 
-gAlpha :: GenParser st Letter
-gAlpha =
+alpha :: GenParser st Letter
+alpha =
   (do PCh.char '_'
       alpha <- PCh.oneOf [baseAlpha, capAlpha]
       br <- optBreathing
@@ -107,16 +105,16 @@ gAlpha =
           notFollowedBy diacritical
           return $ makeLetter alpha br ac iotaSub NoMacron)
 
-gEpsilon :: GenParser st Letter
-gEpsilon =
+epsilon :: GenParser st Letter
+epsilon =
   do epsilon <- PCh.oneOf [baseEpsilon, capEpsilon]
      br <- optBreathing
      ac <- optAccNoCirc
      notFollowedBy diacritical
      return $ makeLetter epsilon br ac NoIotaSub NoMacron
 
-gEta :: GenParser st Letter
-gEta =
+eta :: GenParser st Letter
+eta =
   do eta <- PCh.oneOf [baseEta, capEta]
      br <- optBreathing
      ac <- optAccent
@@ -124,8 +122,8 @@ gEta =
      notFollowedBy diacritical
      return $ makeLetter eta br ac iotaSub NoMacron
 
-gIota :: GenParser st Letter
-gIota =
+iota :: GenParser st Letter
+iota =
   (do PCh.char '_'
       iota <- PCh.oneOf [baseIota, capIota]
       br <- optBreathing
@@ -138,16 +136,16 @@ gIota =
           notFollowedBy diacritical
           return $ makeLetter iota br ac NoIotaSub NoMacron)
 
-gOmicron :: GenParser st Letter
-gOmicron =
+omicron :: GenParser st Letter
+omicron =
   do omicron <- PCh.oneOf [baseOmicron, capOmicron]
      br <- optBreathing
      ac <- optAccNoCirc
      notFollowedBy diacritical
      return $ makeLetter omicron br ac NoIotaSub NoMacron
 
-gUpsilon :: GenParser st Letter
-gUpsilon =
+upsilon :: GenParser st Letter
+upsilon =
   (do PCh.char '_'
       upsilon <- PCh.oneOf [baseUpsilon, capUpsilon]
       br <- optBreathing
@@ -160,8 +158,8 @@ gUpsilon =
           notFollowedBy diacritical
           return $ makeLetter upsilon br ac NoIotaSub NoMacron)
 
-gOmega :: GenParser st Letter
-gOmega =
+omega :: GenParser st Letter
+omega =
   do omega <- PCh.oneOf [baseOmega, capOmega]
      br <- optBreathing
      ac <- optAccent
