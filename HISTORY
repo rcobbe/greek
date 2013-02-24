@@ -1,3 +1,9 @@
+New in 1.2.2:
+
+  - Adjust LaTeX output to use explicit braces with \_ for macrons (necessary
+    to get desired output for certain combinations of diacriticals, such as
+    lowercase alpha + smooth + acute).
+
 New in 1.2.1:
 
   - add Haddock comments to Data.Greek.Parser.
