@@ -22,7 +22,7 @@ import Data.Greek.UnicodeData
 -- | Translates a 'Letter' to input syntax.
 letterToUnicode :: Letter -> Text
 letterToUnicode l =
-  unicodeRenderer "_" l
+  unicodeRenderer prependMacron l
 
 -- | Translates a 'Word' to input syntax.
 wordToUnicode :: Word -> Text
@@ -32,7 +32,7 @@ wordToUnicode wd =
 -- | Translates a 'Letter' to LaTeX syntax.
 letterToLaTeX :: Letter -> Text
 letterToLaTeX l =
-  unicodeRenderer "\\_" l
+  unicodeRenderer addLatexMacron l
 
 -- | Translates a 'Word' to LaTeX syntax.
 wordToLaTeX :: Word -> Text
@@ -40,23 +40,29 @@ wordToLaTeX wd =
   Text.concat (map letterToLaTeX (getLetters wd))
 
 -- | Converts a 'Letter' to its normalized representation.
-unicodeRenderer :: Text         -- ^ Unicode representation of macron
+unicodeRenderer :: (Text -> Text) -- ^ function to add macron
                    -> Letter    -- ^ letter to convert
                    -> Text
-unicodeRenderer macronStr l =
-  Text.concat [case getMacron l of
-                  NoMacron -> ""
-                  Macron -> macronStr,
-               Text.singleton (getBase l),
-               case getBreathing l of
-                 NoBreathing -> ""
-                 Smooth -> Text.singleton combSmooth
-                 Rough -> Text.singleton combRough,
-               case getAccent l of
-                 NoAccent -> ""
-                 Acute -> Text.singleton combAcute
-                 Grave -> Text.singleton combGrave
-                 Circumflex -> Text.singleton combCirc,
-               case getIotaSub l of
-                 NoIotaSub -> ""
-                 IotaSub -> Text.singleton combIotaSub]
+unicodeRenderer addMacron l =
+  (case getMacron l of
+      NoMacron -> id
+      Macron -> addMacron)
+  (Text.concat [Text.singleton (getBase l),
+                case getBreathing l of
+                  NoBreathing -> ""
+                  Smooth -> Text.singleton combSmooth
+                  Rough -> Text.singleton combRough,
+                case getAccent l of
+                  NoAccent -> ""
+                  Acute -> Text.singleton combAcute
+                  Grave -> Text.singleton combGrave
+                  Circumflex -> Text.singleton combCirc,
+                case getIotaSub l of
+                  NoIotaSub -> ""
+                  IotaSub -> Text.singleton combIotaSub])
+
+prependMacron :: Text -> Text
+prependMacron t = Text.append "_" t
+
+addLatexMacron :: Text -> Text
+addLatexMacron t = Text.concat ["\\_{", t, "}"]
