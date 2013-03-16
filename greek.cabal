@@ -38,7 +38,7 @@ Test-Suite greek-tests
   build-depends:
     base == 4.5.*,
     containers == 0.4.*,
-    greek == 1.1.0,
+    greek == 1.2.2,
     HUnit == 1.2.*,
     parsec == 3.1.*,
     QuickCheck == 2.5.*,
