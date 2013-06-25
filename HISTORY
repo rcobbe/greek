@@ -2,6 +2,8 @@ New in 1.2.3:
 
   - Fixed internal cabal package reference
 
+  - Updated cabal package versions to Haskell Package 2013-2.
+
 New in 1.2.2:
 
   - Adjust LaTeX output to use explicit braces with \_ for macrons (necessary
