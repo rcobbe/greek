@@ -28,6 +28,8 @@ Library
     Data.Greek.UnicodeData
     Data.Greek.Word
   Other-modules:
+    -- Cabal has some magic to make private modules listed here available to
+    -- the test suite below, but not to other clients of the library.
     Data.Greek.Private.Normalize
 
 Test-Suite greek-tests
