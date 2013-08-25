@@ -24,12 +24,11 @@
 --   alpha-rough-grave).
 module Data.Greek.Private.Normalize where
 
-import Data.Text.Lazy (Text)
-import qualified Data.Text.Lazy as Text
-
 import Data.Set (Set, member)
 import qualified Data.Set as Set
 
+import Data.Greek.Texty (Texty)
+import qualified Data.Greek.Texty as Texty
 import Data.Greek.UnicodeData
 
 -- | Normalizes all polytonic Greek text in a string.  Each maximal substring
@@ -61,38 +60,40 @@ import Data.Greek.UnicodeData
 --   are copied unchanged to the output.  This function only re-orders and
 --   de-dups Greek combining diacriticals when they appear after a Greek base
 --   character; otherwise, it copies them to the output unchanged.
-normalize :: Text -> Text
+normalize :: Texty a => a -> a
 normalize t =
-  if (Text.null t) then ""
+  if Texty.null t then Texty.empty
   else
-    let char = Text.head t
-        chars = Text.tail t
+    let char = Texty.head t
+        chars = Texty.tail t
         (rawCombChars, rest) = getCombiningChars chars
         dialytikaCombChars = Set.insert combDialytika rawCombChars
   in case char of
     '\x03aa' ->
-      Text.append (normalizeChar capIota dialytikaCombChars) (normalize rest)
+      Texty.append (normalizeChar capIota dialytikaCombChars) (normalize rest)
     '\x03ab' ->
-      Text.append (normalizeChar capUpsilon dialytikaCombChars) (normalize rest)
+      Texty.append (normalizeChar capUpsilon dialytikaCombChars)
+                   (normalize rest)
     '\x03ca' ->
-      Text.append (normalizeChar baseIota dialytikaCombChars) (normalize rest)
+      Texty.append (normalizeChar baseIota dialytikaCombChars) (normalize rest)
     '\x03cb' ->
-      Text.append (normalizeChar baseUpsilon dialytikaCombChars) (normalize rest)
+      Texty.append (normalizeChar baseUpsilon dialytikaCombChars)
+                   (normalize rest)
     _ | char `member` baseChars ->
-        Text.append (normalizeChar char rawCombChars) (normalize rest)
+        Texty.append (normalizeChar char rawCombChars) (normalize rest)
       | char `member` greekExtendedChars ->
-        Text.append (
+        Texty.append (
           normalizeChar (base char) (Set.union (precomposedDiacriticals char)
                                      rawCombChars))
           (normalize rest)
-      | otherwise -> Text.cons char (normalize chars)
+      | otherwise -> Texty.cons char (normalize chars)
 
 -- | Returns the maximal prefix of the input that contains only Greek
 --   diacritical characters, as a set, and the rest of the input as a list.
-getCombiningChars :: Text -> (Set Char, Text)
+getCombiningChars :: Texty a => a -> (Set Char, a)
 getCombiningChars chars =
-  let (combiningChars, rest) = Text.span isCombiningChar chars
-  in (Set.fromList (Text.unpack combiningChars), rest)
+  let (combiningChars, rest) = Texty.span isCombiningChar chars
+  in (Set.fromList (Texty.unpack combiningChars), rest)
 
 -- | Recognizes combining Greek diacriticals.
 isCombiningChar :: Char -> Bool
@@ -101,9 +102,9 @@ isCombiningChar c =
             combIotaSub, combDialytika]
 
 -- | Renders a base character and diacriticals in normalized form.
-normalizeChar :: Char -> Set Char -> Text
+normalizeChar :: Texty a => Char -> Set Char -> a
 normalizeChar base combiningChars =
-  Text.cons base (Text.pack (filter charAppears orderedCombiningChars))
+  Texty.cons base (Texty.pack (filter charAppears orderedCombiningChars))
   where charAppears c = c `member` combiningChars
 
 -- | Computes the set of diacriticals implicit in a precomposed character.

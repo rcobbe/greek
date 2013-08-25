@@ -37,9 +37,9 @@ singleCharTests =
 
 stringTests =
   "string normalization" ~:
-  ["simple ascii" ~: normalize "abc" ~?= "abc",
+  ["simple ascii" ~: normalize ("abc" :: Text) ~?= "abc",
 
-   "simple greek" ~: normalize "αγορα" ~?= "αγορα",
+   "simple greek" ~: normalize ("αγορα" :: Text) ~?= "αγορα",
 
    "greek with combining accents" ~:
    normalize (pack [baseEta, combIotaSub, combCirc, combSmooth, baseNu])
