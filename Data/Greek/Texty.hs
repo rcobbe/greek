@@ -11,10 +11,10 @@ module Data.Greek.Texty(Texty(..)) where
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as Lazy
 
--- | General interface to "texty" values -- that is, a value that contains some
---   text and behaves generally like a string.  The set of operations supported
---   is ad-hoc, consisting only of the operations we actually need in this
---   package.
+-- | General interface to \"texty\" values -- that is, a value that contains
+-- some text and behaves generally like a string.  The set of operations
+-- supported is ad-hoc, consisting only of the operations we actually need in
+-- this package.
 class Texty a where
   -- | Convert a string to the texty type
   pack :: String -> a
