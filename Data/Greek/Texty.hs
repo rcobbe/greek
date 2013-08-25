@@ -1,78 +1,88 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 
--- This was an attempt to use type classes to defer the decision of lazy vs
--- strict Text as late as possible.  Unfortunately, it doesn't work well with
--- overloaded strings: in @f "hello, world"@ the compiler looks for a Texty
--- instance for [Char], which isn't what we want.
+-- | Define a general interface to a type that is similar to 'Data.Text.Text',
+--   to allow us to defer the decision about the precise string representation
+--   as late as possible.  There is an unfortunate interaction with overloaded
+--   strings, which requires clients to add type annotations in places where
+--   they didn't previously need to, but this is a relatively minor cost.
 
-module Data.Greek.Texty(Texty) where
-
-import Control.DeepSeq (NFData)
-import Data.Data (Data)
-import Data.Int (Int64)
-import Data.Monoid (Monoid)
-import Data.String (IsString)
-import Data.Typeable (Typeable)
+module Data.Greek.Texty(Texty(..)) where
 
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as Lazy
 
-class (Eq a, Data a, Ord a, Read a, Show a,
-       Typeable a, IsString a, NFData a, Monoid a) => Texty a where
-
+-- | General interface to "texty" values -- that is, a value that contains some
+--   text and behaves generally like a string.  The set of operations supported
+--   is ad-hoc, consisting only of the operations we actually need in this
+--   package.
+class Texty a where
+  -- | Convert a string to the texty type
   pack :: String -> a
+  -- | Convert a texty type to the equivalent string
   unpack :: a -> String
-  singleton :: Char -> a
+
+  -- | The type-appropriate representation of the empty string
   empty :: a
 
+  -- | Add a character to the front of a texty value
   cons :: Char -> a -> a
-  snoc :: a -> Char -> a
-  append :: a -> a -> a
-  uncons :: a -> Maybe (Char, a)
-  head :: a -> Char
-  last :: a -> Char
-  tail :: a -> a
-  init :: a -> a
+
+  -- | Tests whether a texty value is empty or not
   null :: a -> Bool
-  length :: a -> Int64
-  compareLength :: a -> Int64 -> Ordering
+
+  -- | Returns the first character of a texty value, which must not be empty.
+  head :: a -> Char
+
+  -- | Returns all characters after the head of a texty value, which must not
+  --   be empty.
+  tail :: a -> a
+
+  -- | Concatenates two texty values.
+  append :: a -> a -> a
+
+  -- | @span p t@ returns a pair of texty values.  The first is the longest
+  --   prefix of @t@ that contains only characters that satisfy @p@, and the
+  --   second is the remainder of the original texty value.
+  span :: (Char -> Bool) -> a -> (a, a)
+
+instance Texty String where
+  pack = id
+  unpack = id
+
+  empty = []
+  cons = (:)
+  null = Prelude.null
+  head = Prelude.head
+  tail = Prelude.tail
+
+  append = (++)
+
+  span = Prelude.span
 
 instance Texty Text.Text where
   pack = Text.pack
   unpack = Text.unpack
-  singleton = Text.singleton
-  empty = Text.empty
 
+  empty = Text.empty
   cons = Text.cons
-  snoc = Text.snoc
-  append = Text.append
-  uncons = Text.uncons
-  head = Text.head
-  last = Text.last
-  tail = Text.tail
-  init = Text.init
   null = Text.null
-  length t = fromInteger (toInteger (Text.length t))
-  compareLength t n =
-    Text.compareLength t (fromInteger (toInteger n))
+  head = Text.head
+  tail = Text.tail
+
+  append = Text.append
+
+  span = Text.span
 
 instance Texty Lazy.Text where
   pack = Lazy.pack
   unpack = Lazy.unpack
-  singleton = Lazy.singleton
+
   empty = Lazy.empty
-
   cons = Lazy.cons
-  snoc = Lazy.snoc
-  append = Lazy.append
-  uncons = Lazy.uncons
-  head = Lazy.head
-  last = Lazy.last
-  tail = Lazy.tail
-  init = Lazy.init
   null = Lazy.null
-  length = Lazy.length
-  compareLength = Lazy.compareLength
+  head = Lazy.head
+  tail = Lazy.tail
 
-f :: Texty t => t -> String
-f = unpack
+  append = Lazy.append
+
+  span = Lazy.span
