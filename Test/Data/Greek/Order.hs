@@ -24,7 +24,6 @@ import Test.QuickCheck ((==>), (.&&.), (.||.))
 import qualified Test.QuickCheck as QC
 
 import Data.Greek.Word
-import Data.Greek.Order
 import Data.Greek.UnicodeData
 
 -- temporary

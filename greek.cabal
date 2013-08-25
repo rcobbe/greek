@@ -22,7 +22,6 @@ Library
   Ghc-options: -fwarn-incomplete-patterns
   Exposed-modules:
     Data.Greek.Normalize,
-    Data.Greek.Order,
     Data.Greek.Output,
     Data.Greek.Parser,
     Data.Greek.Texty,
