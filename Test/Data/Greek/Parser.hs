@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Test.Data.Greek.Parser(tests) where
 
 import qualified Data.Text.Lazy as Text
@@ -23,7 +21,7 @@ tests =
 allLetterTests =
   "parsing individual letters" ~:
   [show letter ~:
-   assertNormalizedParse letter GP.letter (letterToUnicode letter)
+   (Right letter) ~?= GP.letter (letterToUnicode letter)
    | base <- Set.toList baseChars,
      breathing <- [NoBreathing, Smooth, Rough],
      accent <- [NoAccent, Acute, Grave, Circumflex],
@@ -35,29 +33,39 @@ allLetterTests =
 otherLetterTests =
   "other tests involving parsing letters" ~:
   ["spurious diacritical" ~:
-    assertParseFail GP.letter (Text.pack [baseEpsilon, combIotaSub]),
+   GP.letter [baseEpsilon, combIotaSub]
+   ~?= Left (GP.InvalidInputException [combIotaSub]),
 
    "trailing input" ~:
-   assertNormalizedParse ((makeLetter baseAlpha Smooth Acute IotaSub NoMacron),
-                          "γ")
-   (parseRest GP.letter) (normalize "ᾄγ")
+   let input = "ᾄγ"
+   in GP.letter input
+      ~?= Left (GP.InvalidInputException (normalize input))
   ]
 
 wordTests =
   "parsing complete words" ~:
   ["standalone word" ~:
-   assertNormalizedParse (GP.literalWord "ἀδελφός", "") (parseRest GP.word)
-   "ἀδελφός",
+   GP.word "ἀδελφός"
+   ~?=
+   Right (makeWord [makeLetter 'α' Smooth NoAccent NoIotaSub NoMacron,
+                    makeLetter 'δ' NoBreathing NoAccent NoIotaSub NoMacron,
+                    makeLetter 'ε' NoBreathing NoAccent NoIotaSub NoMacron,
+                    makeLetter 'λ' NoBreathing NoAccent NoIotaSub NoMacron,
+                    makeLetter 'φ' NoBreathing NoAccent NoIotaSub NoMacron,
+                    makeLetter 'ο' NoBreathing Acute NoIotaSub NoMacron,
+                    makeLetter 'ς' NoBreathing NoAccent NoIotaSub NoMacron]),
 
    "word with following whitespace" ~:
-   assertNormalizedParse (GP.literalWord "ἀγορ_ά", "\n")
-   (parseRest GP.word) "ἀγορ_ά\n",
+   Left (GP.InvalidInputException "\n")
+   ~?= GP.word "ἀγορ_ά\n",
 
    "greek text with following punctuation" ~:
-   assertNormalizedParse (GP.literalWord "οὐ", ")") (parseRest GP.word) "οὐ)",
+   Left (GP.InvalidInputException ")")
+   ~?= GP.word "οὐ)",
 
    "greek text with trailing non-greek characters" ~:
-   assertNormalizedParse (GP.literalWord "οὐ", "k") (parseRest GP.word) "οὐk"]
+   Left (GP.InvalidInputException "k")
+   ~?= GP.word "οὐk"]
 
 errorTests =
   let circError =
@@ -65,14 +73,17 @@ errorTests =
   in
    "customized parsing errors" ~:
   ["alpha with macron and circumflex" ~:
-   assertParseError GP.letter (normalize "_ᾶ") circError,
+   GP.letter "_ᾶ"
+   ~?= Left (GP.InvalidInputException [combCirc]),
 
    "alpha with macron and iota subscript" ~:
-   assertParseError GP.letter (normalize "_ᾳ")
-   (PError.Message "iota subscript and macron may not occur together"),
+   GP.letter "_ᾳ"
+   ~?= Left (GP.InvalidInputException [combIotaSub]),
 
    "iota with macron & circumflex" ~:
-   assertParseError GP.letter (normalize "_ῖ") circError,
+   GP.letter "_ῖ"
+   ~?= Left (GP.InvalidInputException [combCirc]),
 
    "upsilon with macron and circumflex" ~:
-   assertParseError GP.letter (normalize "_ῦ") circError]
+   GP.letter "_ῦ"
+   ~?= Left (GP.InvalidInputException [combCirc])]

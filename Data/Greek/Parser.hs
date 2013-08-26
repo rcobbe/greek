@@ -8,222 +8,87 @@
 --   written representation, and not to vowel length -- so, for instance,
 --   \"_ά\" denotes a long alpha with an acute accent, but \"_ᾶ\" results in a
 --   parse error, because the macron is redundant with the circumflex.)
-module Data.Greek.Parser(word,
-                         letter,
+module Data.Greek.Parser(ParseException(..),
+                         word,
                          literalWord,
-                         literalLetter) where
+                         letter) where
 
 import Control.Monad
-import Data.Set (Set)
 import qualified Data.Set as Set
-
-import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as Text
+import Data.Trie (Trie)
+import qualified Data.Trie as Trie
 
-import qualified Text.Parsec.Char as PCh
-import Text.Parsec.Combinator
-import Text.Parsec.Prim
-import Text.Parsec.Text.Lazy
-
-import Data.Greek.Word
 import Data.Greek.Normalize
-import Data.Greek.UnicodeData
+import Data.Greek.Texty (Texty)
+import qualified Data.Greek.Texty as Texty
+import Data.Greek.Word
+import Data.Greek.Output
 
--- | Set of those base characters that denote vowels.
-baseVowels :: Set Char
-baseVowels =
-  Set.fromList
-  [baseAlpha, baseEpsilon, baseEta, baseIota, baseOmicron, baseUpsilon,
-   baseOmega, capAlpha, capEpsilon, capEta, capIota, capOmicron, capUpsilon,
-   capOmega]
+-- XXX ditch use of Trie.  First split normalized input into characters (opt
+-- macron, base, breathing, diaeresis, accent, iota sub), then parse individual
+-- letters.  This lets us give more useful error messages when on, say, alpha
+-- plus macron and circumflex.  (Trie just reports invalid input on circumflex.)
 
--- | Set of those base characters that denote consonants.
-baseConsonants :: Set Char
-baseConsonants = Set.difference baseChars baseVowels
+-- | Exception used to signal invalid Greek input to one of the parsing
+--   routines.  The String value is the bad input.
+data ParseException = InvalidInputException String
+                    deriving (Eq, Show)
 
--- | Set of those base characters that denote consonants, without rho.
-nonRhoConsonants :: Set Char
-nonRhoConsonants =
-  Set.difference baseConsonants (Set.fromList [baseRho, capRho])
+-- | Normalizes the input and then attempts to parse it as a 'Word'.  Returns a
+--   'ParseException' if the input isn't a valid 'Word'; this includes
+--   extraneous trailing input.
+word :: Texty a => a -> Either ParseException Word
+word input =
+  let normalizedInput = normalize input
+  in
+   do when (Texty.null normalizedInput) (Left $ InvalidInputException "")
+      letters <- parseLetters (Texty.unpack normalizedInput)
+      return (makeWord letters)
 
--- | Set of characters that denote Greek combining diacriticals.
-combiningDiacriticals :: Set Char
-combiningDiacriticals =
-  Set.fromList [combSmooth, combRough,
-                combAcute, combGrave, combCirc,
-                combDialytika,
-                combIotaSub]
-
--- | Parse a single 'Word' from the input.
-word :: GenParser st Word
-word =
-  (do letters <- many1 (try letter)
-      return $ makeWord letters)
-  <?> "greek word"
-
--- | Parse a single 'Letter' from the input, including leading underscore and
---   trailing combining diacriticals, if appropriate.
-letter :: GenParser st Letter
-letter =
-  (consonant
-   <|> try alpha
-   <|> epsilon
-   <|> eta
-   <|> try iota
-   <|> omicron
-   <|> try upsilon
-   <|> omega)
-  <?> "greek letter"
-
-consonant :: GenParser st Letter
-consonant =
-  ((do baseChar <- PCh.oneOf (Set.elems nonRhoConsonants)
-       notFollowedBy diacritical
-       return $ makeLetter baseChar NoBreathing NoAccent NoIotaSub NoMacron)
-   <|>
-   (do rho <- PCh.oneOf [baseRho, capRho]
-       br <- optBreathing
-       notFollowedBy diacritical
-       return $ makeLetter rho br NoAccent NoIotaSub NoMacron))
-  <?> "greek consonant"
-
-alpha :: GenParser st Letter
-alpha =
-  (do PCh.char '_'
-      alpha <- PCh.oneOf [baseAlpha, capAlpha]
-      br <- optBreathing
-      ac <- optAccentAfterMacron
-      iotaSub <- optIotaSub
-      when (iotaSub == IotaSub)
-        (fail "iota subscript and macron may not occur together")
-      notFollowedBy diacritical
-      return $ makeLetter alpha br ac NoIotaSub Macron)
-  <|> (do alpha <- PCh.oneOf [baseAlpha, capAlpha]
-          br <- optBreathing
-          ac <- optAccent
-          iotaSub <- optIotaSub
-          notFollowedBy diacritical
-          return $ makeLetter alpha br ac iotaSub NoMacron)
-
-epsilon :: GenParser st Letter
-epsilon =
-  do epsilon <- PCh.oneOf [baseEpsilon, capEpsilon]
-     br <- optBreathing
-     ac <- optAccNoCirc
-     notFollowedBy diacritical
-     return $ makeLetter epsilon br ac NoIotaSub NoMacron
-
-eta :: GenParser st Letter
-eta =
-  do eta <- PCh.oneOf [baseEta, capEta]
-     br <- optBreathing
-     ac <- optAccent
-     iotaSub <- optIotaSub
-     notFollowedBy diacritical
-     return $ makeLetter eta br ac iotaSub NoMacron
-
-iota :: GenParser st Letter
-iota =
-  (do PCh.char '_'
-      iota <- PCh.oneOf [baseIota, capIota]
-      br <- optBreathing
-      ac <- optAccentAfterMacron
-      notFollowedBy diacritical
-      return $ makeLetter iota br ac NoIotaSub Macron)
-  <|> (do iota <- PCh.oneOf [baseIota, capIota]
-          br <- optBreathing
-          ac <- optAccent
-          notFollowedBy diacritical
-          return $ makeLetter iota br ac NoIotaSub NoMacron)
-
-omicron :: GenParser st Letter
-omicron =
-  do omicron <- PCh.oneOf [baseOmicron, capOmicron]
-     br <- optBreathing
-     ac <- optAccNoCirc
-     notFollowedBy diacritical
-     return $ makeLetter omicron br ac NoIotaSub NoMacron
-
-upsilon :: GenParser st Letter
-upsilon =
-  (do PCh.char '_'
-      upsilon <- PCh.oneOf [baseUpsilon, capUpsilon]
-      br <- optBreathing
-      ac <- optAccentAfterMacron
-      notFollowedBy diacritical
-      return $ makeLetter upsilon br ac NoIotaSub Macron)
-  <|> (do upsilon <- PCh.oneOf [baseUpsilon, capUpsilon]
-          br <- optBreathing
-          ac <- optAccent
-          notFollowedBy diacritical
-          return $ makeLetter upsilon br ac NoIotaSub NoMacron)
-
-omega :: GenParser st Letter
-omega =
-  do omega <- PCh.oneOf [baseOmega, capOmega]
-     br <- optBreathing
-     ac <- optAccent
-     iotaSub <- optIotaSub
-     notFollowedBy diacritical
-     return $ makeLetter omega br ac iotaSub NoMacron
-
-optBreathing :: GenParser st Breathing
-optBreathing =
-  (PCh.char combSmooth >> return Smooth)
-  <|> (PCh.char combRough >> return Rough)
-  <|> return NoBreathing
-
-optAccNoCirc :: GenParser st Accent
-optAccNoCirc =
-  (PCh.char combAcute >> return Acute)
-  <|> (PCh.char combGrave >> return Grave)
-  <|> return NoAccent
-
-optAccent :: GenParser st Accent
-optAccent =
-  (PCh.char combAcute >> return Acute)
-  <|> (PCh.char combGrave >> return Grave)
-  <|> (PCh.char combCirc >> return Circumflex)
-  <|> return NoAccent
-
--- | Parse an optional combining accent on a vowel with an explicit macron.
---   Behaves like 'optAccNoCirc', but fails with a detailed error message
---   upon parsing a circumflex.
-optAccentAfterMacron :: GenParser st Accent
-optAccentAfterMacron =
-  do a <- optAccent
-     when (a == Circumflex)
-       (fail "circumflex and macron may not occur together")
-     return a
-
-optIotaSub :: GenParser st IotaSub
-optIotaSub =
-  (PCh.char combIotaSub >> return IotaSub)
-  <|> return NoIotaSub
-
-diacritical :: GenParser st Char
-diacritical =
-  (PCh.oneOf (Set.elems combiningDiacriticals))
-  <?> "combining diacritical"
-
--- | Normalize the input and then attempt to parse it as a 'Word'.  Aborts on
---   parse errors, so this is intended for expressing literal 'Word's in code,
---   and not for parsing user input.
-literalWord :: Text -> Word
-literalWord = makeLiteralParser word
-
--- | Normalize the input and then parse it as a 'Letter'.  As with
---   'literalWord', this aborts on parse errors, so use only for literal
---   'Letter's in code.
-literalLetter :: Text -> Letter
-literalLetter = makeLiteralParser letter
-
-makeLiteralParser :: GenParser () a -> Text -> a
-makeLiteralParser p str =
-  let pPlusEof = do result <- p
-                    eof
-                    return result
-  in case parse pPlusEof "" (normalize str) of
-    Left err -> error (show err)
+-- | Normalize the input and parse it as a 'Word'.  Aborts on parse errors
+--   (including extraneous trailing input), so this is best used for expressing
+--   literal Words in code and not for parsing user input.
+literalWord :: Texty a => a -> Word
+literalWord input =
+  case word input of
+    Left (InvalidInputException s) ->
+      error $ "literalWord: invalid input: " ++ s
     Right w -> w
+
+-- | Normalize the input and parse it as a single letter.  Returns a
+--   'ParseException' on parse errors, including trailing input.
+letter :: Texty a => a -> Either ParseException Letter
+letter input =
+  do w <- word input
+     when (length (getLetters w) /= 1)
+       (Left $ InvalidInputException (Texty.unpack (normalize input)))
+     return (head (getLetters w))
+
+-- | Main parse loop.  Attempts to parse the *entire* argument list, which must
+--   be normalized, as a sequence of Greek letters.  Throws a 'ParseException'
+--   if the input isn't valid.
+parseLetters :: [Char] -> Either ParseException [Letter]
+parseLetters [] = return []
+parseLetters input =
+  case Trie.matchPrefix inputTrie input of
+    Just (newInput, letter) ->
+      do remainingLetters <- parseLetters newInput
+         return (letter : remainingLetters)
+    Nothing ->
+      Left $ InvalidInputException input
+
+-- | Trie defining input from sequences of 'Char' to individual Greek
+--   'Letter's.
+inputTrie :: Trie Char Letter
+inputTrie =
+  Trie.fromList
+    [(Text.unpack (letterToUnicode letter), letter) |
+     base <- Set.elems baseChars,
+     iotaSub <- [NoIotaSub, IotaSub],
+     breathing <- [NoBreathing, Smooth, Rough],
+     accent <- [NoAccent, Acute, Grave, Circumflex],
+     macron <- [NoMacron, Macron],
+     validLetter macron base breathing accent iotaSub,
+     let letter = makeLetter base breathing accent iotaSub macron]
 
