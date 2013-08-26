@@ -18,8 +18,7 @@ Library
     base == 4.6.*,
     containers == 0.5.*,
     text == 0.11.*,
-    parsec == 3.1.*,
-    trie == 0.0.*
+    parsec == 3.1.*
   Ghc-options: -fwarn-incomplete-patterns
   Exposed-modules:
     Data.Greek.Normalize,
@@ -45,6 +44,5 @@ Test-Suite greek-tests
     HUnit == 1.2.*,
     parsec == 3.1.*,
     QuickCheck == 2.6.*,
-    trie == 0.0.*,
     test-utils == 1.2.*,
     text == 0.11.*
