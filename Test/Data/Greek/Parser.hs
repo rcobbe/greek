@@ -1,15 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Test.Data.Greek.Parser(tests) where
 
-import qualified Data.Text.Lazy as Text
+import Control.Exceptional.HUnit
 import qualified Data.Set as Set
+
 import Test.HUnit
 
-import Text.Parsec.Error as PError
-
-import Test.Utils
-import Test.Data.Greek.Utils
 import Data.Greek.Word
 import qualified Data.Greek.Parser as GP
 import Data.Greek.Output
@@ -23,7 +18,7 @@ tests =
 allLetterTests =
   "parsing individual letters" ~:
   [show letter ~:
-   assertNormalizedParse letter GP.letter (letterToUnicode letter)
+   assertNoExn letter (GP.letter (letterToUnicode letter))
    | base <- Set.toList baseChars,
      breathing <- [NoBreathing, Smooth, Rough],
      accent <- [NoAccent, Acute, Grave, Circumflex],
@@ -35,26 +30,41 @@ allLetterTests =
 otherLetterTests =
   "other tests involving parsing letters" ~:
   ["spurious diacritical" ~:
-    assertParseFail GP.letter (Text.pack [baseEpsilon, combIotaSub]),
+   assertExn' (\ _ -> return ()) (GP.letter [baseEpsilon, combIotaSub]),
 
    "trailing input" ~:
-   assertNormalizedParse ((makeLetter baseAlpha Smooth Acute IotaSub NoMacron),
-                          "γ")
-   (parseRest GP.letter) (normalize "ᾄγ")
+   assertNoExn (makeLetter baseAlpha Smooth Acute IotaSub NoMacron)
+     (GP.letter (normalize "ᾄγ"))
   ]
 
 wordTests =
   "parsing complete words" ~:
   ["standalone word" ~:
-   assertNormalizedParse (GP.literalWord "ἀδελφός", "") (parseRest GP.word)
-   "ἀδελφός",
+   assertNoExn
+     (makeWord [makeLetter baseAlpha Smooth NoAccent NoIotaSub NoMacron,
+                makeLetter baseDelta NoBreathing NoAccent NoIotaSub NoMacron,
+                makeLetter baseEpsilon NoBreathing NoAccent NoIotaSub NoMacron,
+                makeLetter baseLambda NoBreathing NoAccent NoIotaSub NoMacron,
+                makeLetter basePhi NoBreathing NoAccent NoIotaSub NoMacron,
+                makeLetter baseOmicron NoBreathing Acute NoIotaSub NoMacron,
+                makeLetter baseFinalSigma
+                  NoBreathing NoAccent NoIotaSub NoMacron])
+     (GP.word (normalize "ἀδελφός")),
 
    "word with following whitespace" ~:
-   assertNormalizedParse (GP.literalWord "ἀγορ_ά", "\n")
-   (parseRest GP.word) "ἀγορ_ά\n",
+   assertNoExn
+     (makeWord [makeLetter baseAlpha Smooth NoAccent NoIotaSub NoMacron,
+                makeLetter baseGamma NoBreathing NoAccent NoIotaSub NoMacron,
+                makeLetter baseOmicron NoBreathing NoAccent NoIotaSub NoMacron,
+                makeLetter baseRho NoBreathing NoAccent NoIotaSub NoMacron,
+                makeLetter baseAlpha NoBreathing Acute NoIotaSub Macron])
+     (GP.word "ἀγορ_ά\n"),
 
    "greek text with following punctuation" ~:
-   assertNormalizedParse (GP.literalWord "οὐ", ")") (parseRest GP.word) "οὐ)",
+   assertNoExn
+     (makeWord [makeLetter baseOmicron NoBreathing NoAccent NoIotaSub NoMacron,
+                makeLetter baseUpsilon Smooth NoAccent NoIotaSub NoMacron])
+     (GP.word "οὐ)"),
 
    "greek text with trailing non-greek characters" ~:
    assertNormalizedParse (GP.literalWord "οὐ", "k") (parseRest GP.word) "οὐk"]

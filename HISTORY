@@ -1,3 +1,15 @@
+New in 2.0:
+
+  - Moved 'Ord' instance for 'Word' into Data.Greek.Word, to avoid
+    orphaned-instance problem.
+
+  - Redefine public interface of the library in terms of the new 'Texty'
+    class, to allow multiple string representations.
+
+  - No longer export Parsec combinators as interface for creating Words out
+    of input.  This allows us to define the parsing routines in terms of
+    'Texty' rather than a specific string type.
+
 New in 1.2.3:
 
   - Fixed internal cabal package reference

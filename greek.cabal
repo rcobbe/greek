@@ -1,5 +1,5 @@
 Name:           greek
-Version:        1.2.3
+Version:        2.0.0
 Cabal-Version:  >= 1.14
 Author:         Richard Cobbe
 Synopsis:       Library for processing Greek text
@@ -18,7 +18,8 @@ Library
     base == 4.6.*,
     containers == 0.5.*,
     text == 0.11.*,
-    parsec == 3.1.*
+    parsec == 3.1.*,
+    exceptional == 0.2.*
   Ghc-options: -fwarn-incomplete-patterns
   Exposed-modules:
     Data.Greek.Normalize,
@@ -41,6 +42,7 @@ Test-Suite greek-tests
     base == 4.6.*,
     containers == 0.5.*,
     greek,
+    exceptional == 0.2.*,
     HUnit == 1.2.*,
     parsec == 3.1.*,
     QuickCheck == 2.6.*,
