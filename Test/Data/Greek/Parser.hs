@@ -8,7 +8,6 @@ import Test.HUnit
 import Data.Greek.Word
 import qualified Data.Greek.Parser as GP
 import Data.Greek.Output
-import Data.Greek.Normalize
 import Data.Greek.UnicodeData
 
 tests =
@@ -34,7 +33,7 @@ otherLetterTests =
 
    "trailing input" ~:
    assertNoExn (makeLetter baseAlpha Smooth Acute IotaSub NoMacron)
-     (GP.letter (normalize "ᾄγ"))
+     (GP.letter "ᾄγ")
   ]
 
 wordTests =
@@ -49,7 +48,7 @@ wordTests =
                 makeLetter baseOmicron NoBreathing Acute NoIotaSub NoMacron,
                 makeLetter baseFinalSigma
                   NoBreathing NoAccent NoIotaSub NoMacron])
-     (GP.word (normalize "ἀδελφός")),
+     (GP.word "ἀδελφός"),
 
    "word with following whitespace" ~:
    assertNoExn
@@ -67,22 +66,25 @@ wordTests =
      (GP.word "οὐ)"),
 
    "greek text with trailing non-greek characters" ~:
-   assertNormalizedParse (GP.literalWord "οὐ", "k") (parseRest GP.word) "οὐk"]
+   assertNoExn
+     (makeWord [makeLetter baseOmicron NoBreathing NoAccent NoIotaSub NoMacron,
+                makeLetter baseUpsilon Smooth NoAccent NoIotaSub NoMacron])
+     (GP.word "οὐk")]
 
 errorTests =
-  let circError =
-        (PError.Message "circumflex and macron may not occur together")
+  let circError = "circumflex and macron may not occur together"
   in
    "customized parsing errors" ~:
   ["alpha with macron and circumflex" ~:
-   assertParseError GP.letter (normalize "_ᾶ") circError,
+   assertExn (GP.ParseError 2 [circError]) (GP.letter "_ᾶ"),
 
    "alpha with macron and iota subscript" ~:
-   assertParseError GP.letter (normalize "_ᾳ")
-   (PError.Message "iota subscript and macron may not occur together"),
+   assertExn
+     (GP.ParseError 2 ["iota subscript and macron may not occur together"])
+     (GP.letter "_ᾳ"),
 
    "iota with macron & circumflex" ~:
-   assertParseError GP.letter (normalize "_ῖ") circError,
+   assertExn (GP.ParseError 2 [circError]) (GP.letter "_ῖ"),
 
    "upsilon with macron and circumflex" ~:
-   assertParseError GP.letter (normalize "_ῦ") circError]
+   assertExn (GP.ParseError 2 [circError]) (GP.letter "_ῦ")]
