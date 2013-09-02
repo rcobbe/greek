@@ -34,8 +34,20 @@ import Data.Greek.Word
 import Data.Greek.Normalize
 import Data.Greek.UnicodeData
 
+-- XXX offset may not be useful, given automatic normalization.
+
+-- XXX client no longer needs to normalize text.
+
+-- XXX probably want to signal error on trailing input.
+
+-- | Signals an error in converting text to greek representation.
 data ParseError = ParseError { offset :: Int,
-                               messages :: [String] }
+                               -- ^ Offset within _normalized_ string at which
+                               --   error occurred
+                               messages :: [String]
+                               -- ^ Non-empty list of parse error messages.
+                             }
+                deriving (Eq)
 
 type Parser result = PStr.GenParser Char () result
 
@@ -46,14 +58,13 @@ instance Show ParseError where
                     ": ",
                     List.intercalate ", " msgs]
 
--- | Converts the provided 'Texty' value into a Greek 'Word'.  Input must be
---   normalized.
+-- | Converts the provided 'Texty' value into a Greek 'Word'.  Parses as much
+--   of the string as possible, but ignores trailing input.
 word :: Texty a => a -> Exceptional ParseError Word
 word = parsecWrapper parseWord "word"
 
--- | Converts the provided 'Texty' value into a Greek 'Letter'.  Input must be
---   normalized.  Ignores any extra input after that which defines the first
---   letter.
+-- | Converts the provided 'Texty' value into a Greek 'Letter'.  Ignores any
+--   extra input after that which defines the first letter.
 letter :: Texty a => a -> Exceptional ParseError Letter
 letter = parsecWrapper parseLetter "letter"
 
@@ -61,7 +72,7 @@ letter = parsecWrapper parseLetter "letter"
 parsecWrapper :: Texty a =>
                  Parser b -> String -> a -> Exceptional ParseError b
 parsecWrapper parser sourceLabel src =
-  case parse parser sourceLabel (unpack src) of
+  case parse parser sourceLabel (unpack (normalize src)) of
     Left err ->
       Exc.throw (ParseError (sourceLine (PErr.errorPos err))
                  (map PErr.messageString (PErr.errorMessages err)))
