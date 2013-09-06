@@ -11,6 +11,8 @@ import Data.Greek.Output
 import Data.Greek.Normalize
 import Data.Greek.UnicodeData
 
+-- XXX remove explicit calls to normalize when we finish overhauling parser.
+
 tests =
   "Greek.Parser" ~:
   [allLetterTests, otherLetterTests, wordTests, errorTests]
@@ -58,31 +60,39 @@ wordTests =
                 makeLetter baseOmicron NoBreathing NoAccent NoIotaSub NoMacron,
                 makeLetter baseRho NoBreathing NoAccent NoIotaSub NoMacron,
                 makeLetter baseAlpha NoBreathing Acute NoIotaSub Macron])
-     (GP.word "ἀγορ_ά\n"),
+     (GP.word (normalize "ἀγορ_ά\n")),
 
    "greek text with following punctuation" ~:
    assertNoExn
      (makeWord [makeLetter baseOmicron NoBreathing NoAccent NoIotaSub NoMacron,
                 makeLetter baseUpsilon Smooth NoAccent NoIotaSub NoMacron])
-     (GP.word "οὐ)"),
+     (GP.word (normalize "οὐ)")),
 
    "greek text with trailing non-greek characters" ~:
-   assertNormalizedParse (GP.literalWord "οὐ", "k") (parseRest GP.word) "οὐk"]
+   assertNoExn
+     (makeWord [makeLetter baseOmicron NoBreathing NoAccent NoIotaSub NoMacron,
+                makeLetter baseUpsilon Smooth NoAccent NoIotaSub NoMacron])
+     (GP.word (normalize "οὐk"))]
 
 errorTests =
-  let circError =
-        (PError.Message "circumflex and macron may not occur together")
+  let greekLetter = "greek letter"
+      circError = "circumflex and macron may not occur together"
   in
    "customized parsing errors" ~:
   ["alpha with macron and circumflex" ~:
-   assertParseError GP.letter (normalize "_ᾶ") circError,
+   assertExn (GP.ParseError 1 [greekLetter, circError])
+     (GP.letter (normalize "_ᾶ")),
 
    "alpha with macron and iota subscript" ~:
-   assertParseError GP.letter (normalize "_ᾳ")
-   (PError.Message "iota subscript and macron may not occur together"),
+   assertExn
+     (GP.ParseError 1 [greekLetter,
+                       "iota subscript and macron may not occur together"])
+     (GP.letter (normalize "_ᾳ")),
 
    "iota with macron & circumflex" ~:
-   assertParseError GP.letter (normalize "_ῖ") circError,
+   assertExn (GP.ParseError 1 [greekLetter, circError])
+     (GP.letter (normalize "_ῖ")),
 
    "upsilon with macron and circumflex" ~:
-   assertParseError GP.letter (normalize "_ῦ") circError]
+   assertExn (GP.ParseError 1 [greekLetter, circError])
+     (GP.letter (normalize "_ῦ"))]

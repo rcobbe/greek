@@ -36,6 +36,7 @@ import Data.Greek.UnicodeData
 
 data ParseError = ParseError { offset :: Int,
                                messages :: [String] }
+                  deriving (Eq)
 
 type Parser result = PStr.GenParser Char () result
 
