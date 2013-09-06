@@ -93,7 +93,7 @@ normalize t =
 getCombiningChars :: Texty a => a -> (Set Char, a)
 getCombiningChars chars =
   let (combiningChars, rest) = Texty.span isCombiningChar chars
-  in (Set.fromList (Texty.unpack combiningChars), rest)
+  in (Set.fromList (Texty.toString combiningChars), rest)
 
 -- | Recognizes combining Greek diacriticals.
 isCombiningChar :: Char -> Bool
@@ -104,7 +104,7 @@ isCombiningChar c =
 -- | Renders a base character and diacriticals in normalized form.
 normalizeChar :: Texty a => Char -> Set Char -> a
 normalizeChar base combiningChars =
-  Texty.cons base (Texty.pack (filter charAppears orderedCombiningChars))
+  Texty.cons base (Texty.fromString (filter charAppears orderedCombiningChars))
   where charAppears c = c `member` combiningChars
 
 -- | Computes the set of diacriticals implicit in a precomposed character.

@@ -17,9 +17,9 @@ import qualified Data.Text.Lazy as Lazy
 --   this package.
 class Texty a where
   -- | Convert a string to the texty type
-  pack :: String -> a
+  fromString :: String -> a
   -- | Convert a texty type to the equivalent string
-  unpack :: a -> String
+  toString :: a -> String
 
   -- | The type-appropriate representation of the empty string
   empty :: a
@@ -46,8 +46,8 @@ class Texty a where
   span :: (Char -> Bool) -> a -> (a, a)
 
 instance Texty String where
-  pack = id
-  unpack = id
+  fromString = id
+  toString = id
 
   empty = []
   cons = (:)
@@ -60,8 +60,8 @@ instance Texty String where
   span = Prelude.span
 
 instance Texty Text.Text where
-  pack = Text.pack
-  unpack = Text.unpack
+  fromString = Text.pack
+  toString = Text.unpack
 
   empty = Text.empty
   cons = Text.cons
@@ -74,8 +74,8 @@ instance Texty Text.Text where
   span = Text.span
 
 instance Texty Lazy.Text where
-  pack = Lazy.pack
-  unpack = Lazy.unpack
+  fromString = Lazy.pack
+  toString = Lazy.unpack
 
   empty = Lazy.empty
   cons = Lazy.cons

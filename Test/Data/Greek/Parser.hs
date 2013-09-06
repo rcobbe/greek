@@ -72,19 +72,24 @@ wordTests =
      (GP.word "οὐk")]
 
 errorTests =
-  let circError = "circumflex and macron may not occur together"
+  let greekLetter = "greek letter"
+      circError = "circumflex and macron may not occur together"
   in
    "customized parsing errors" ~:
   ["alpha with macron and circumflex" ~:
-   assertExn (GP.ParseError 2 [circError]) (GP.letter "_ᾶ"),
+   assertExn (GP.ParseError 1 [greekLetter, circError])
+     (GP.letter "_ᾶ"),
 
    "alpha with macron and iota subscript" ~:
    assertExn
-     (GP.ParseError 2 ["iota subscript and macron may not occur together"])
+     (GP.ParseError 1 [greekLetter,
+                       "iota subscript and macron may not occur together"])
      (GP.letter "_ᾳ"),
 
    "iota with macron & circumflex" ~:
-   assertExn (GP.ParseError 2 [circError]) (GP.letter "_ῖ"),
+   assertExn (GP.ParseError 1 [greekLetter, circError])
+     (GP.letter "_ῖ"),
 
    "upsilon with macron and circumflex" ~:
-   assertExn (GP.ParseError 2 [circError]) (GP.letter "_ῦ")]
+   assertExn (GP.ParseError 1 [greekLetter, circError])
+     (GP.letter "_ῦ")]

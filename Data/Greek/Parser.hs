@@ -72,7 +72,7 @@ letter = parsecWrapper parseLetter "letter"
 parsecWrapper :: Texty a =>
                  Parser b -> String -> a -> Exceptional ParseError b
 parsecWrapper parser sourceLabel src =
-  case parse parser sourceLabel (unpack (normalize src)) of
+  case parse parser sourceLabel (toString (normalize src)) of
     Left err ->
       Exc.throw (ParseError (sourceLine (PErr.errorPos err))
                  (map PErr.messageString (PErr.errorMessages err)))
