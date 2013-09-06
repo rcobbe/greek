@@ -26,6 +26,7 @@ allLetterTests =
      validLetter macron base breathing accent iotaSub,
      let letter = makeLetter base breathing accent iotaSub macron]
 
+-- XXX replace these with more detailed tests.
 otherLetterTests =
   "other tests involving parsing letters" ~:
   ["spurious diacritical" ~:
@@ -71,25 +72,25 @@ wordTests =
                 makeLetter baseUpsilon Smooth NoAccent NoIotaSub NoMacron])
      (GP.word "οὐk")]
 
-errorTests =
-  let greekLetter = "greek letter"
-      circError = "circumflex and macron may not occur together"
-  in
-   "customized parsing errors" ~:
+-- XXX improve error-case test coverage.
+
+errorTests = "customized parsing errors" ~:
   ["alpha with macron and circumflex" ~:
-   assertExn (GP.ParseError 1 [greekLetter, circError])
+   assertExn
+     (GP.MacronWithCircumflex 0)
      (GP.letter "_ᾶ"),
 
    "alpha with macron and iota subscript" ~:
    assertExn
-     (GP.ParseError 1 [greekLetter,
-                       "iota subscript and macron may not occur together"])
+     (GP.MacronWithIotaSub 0)
      (GP.letter "_ᾳ"),
 
    "iota with macron & circumflex" ~:
-   assertExn (GP.ParseError 1 [greekLetter, circError])
+   assertExn
+     (GP.MacronWithCircumflex 0)
      (GP.letter "_ῖ"),
 
    "upsilon with macron and circumflex" ~:
-   assertExn (GP.ParseError 1 [greekLetter, circError])
+   assertExn
+     (GP.MacronWithCircumflex 0)
      (GP.letter "_ῦ")]
