@@ -18,8 +18,7 @@ Library
     base == 4.6.*,
     containers == 0.5.*,
     text == 0.11.*,
-    exceptional == 0.2.*,
-    regex-posix == 0.95.*
+    exceptional == 0.2.*
   Ghc-options: -fwarn-incomplete-patterns
   Exposed-modules:
     Data.Greek.Normalize,
@@ -44,7 +43,6 @@ Test-Suite greek-tests
     greek,
     exceptional == 0.2.*,
     HUnit == 1.2.*,
-    regex-posix == 0.95.*,
     QuickCheck == 2.6.*,
     test-utils == 1.2.*,
     text == 0.11.*

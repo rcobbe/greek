@@ -33,7 +33,7 @@ otherLetterTests =
    assertExn' (\ _ -> return ()) (GP.letter [baseEpsilon, combIotaSub]),
 
    "trailing input" ~:
-   assertNoExn (makeLetter baseAlpha Smooth Acute IotaSub NoMacron)
+   assertExn (GP.TrailingInput 1 "γ")
      (GP.letter "ᾄγ")
   ]
 
@@ -52,24 +52,17 @@ wordTests =
      (GP.word "ἀδελφός"),
 
    "word with following whitespace" ~:
-   assertNoExn
-     (makeWord [makeLetter baseAlpha Smooth NoAccent NoIotaSub NoMacron,
-                makeLetter baseGamma NoBreathing NoAccent NoIotaSub NoMacron,
-                makeLetter baseOmicron NoBreathing NoAccent NoIotaSub NoMacron,
-                makeLetter baseRho NoBreathing NoAccent NoIotaSub NoMacron,
-                makeLetter baseAlpha NoBreathing Acute NoIotaSub Macron])
+   assertExn (GP.TrailingInput 5 "\n")
      (GP.word "ἀγορ_ά\n"),
 
    "greek text with following punctuation" ~:
-   assertNoExn
-     (makeWord [makeLetter baseOmicron NoBreathing NoAccent NoIotaSub NoMacron,
-                makeLetter baseUpsilon Smooth NoAccent NoIotaSub NoMacron])
+   assertExn
+     (GP.TrailingInput 2 ")")
      (GP.word "οὐ)"),
 
    "greek text with trailing non-greek characters" ~:
-   assertNoExn
-     (makeWord [makeLetter baseOmicron NoBreathing NoAccent NoIotaSub NoMacron,
-                makeLetter baseUpsilon Smooth NoAccent NoIotaSub NoMacron])
+   assertExn
+     (GP.TrailingInput 2 "k")
      (GP.word "οὐk")]
 
 -- XXX improve error-case test coverage.

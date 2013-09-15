@@ -19,10 +19,7 @@ import qualified Data.Map as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
 
-import Control.Exceptional (Exceptional)
-import qualified Control.Exceptional as Exc
-
-import Text.Regex.Posix
+import Control.Exceptional
 
 import Data.Greek.Texty (Texty)
 import qualified Data.Greek.Texty as Texty
@@ -34,26 +31,32 @@ import Data.Greek.UnicodeData
 -- all that helpful.  In particular, every time a parser failed, it stuck the
 -- error message on the front of the list, so errors tended to look like
 -- ["greek letter", "cannot use macron and circumflex together"].
+--
+-- I also tried Text.Regex.Posix to parse out each individual letter, but that
+-- library can't handle Unicode characters in the regular expressions.  So, do
+-- it by hand.
 
 -- | Signals an error in converting text to greek representation.  The offsets
 --   below are in terms of _Greek_ letters, not in terms of the characters in
 --   the input, as the automatic normalization affects the latter.
 data ParseError = EmptyInput
                   -- ^ Input string is empty
+                | MultipleMacrons { offset :: Int }
+                | MultipleBreathing { offset :: Int, diacriticals :: [Char] }
+                  -- ^ The character at the indicated location has multiple
+                  --   breathing marks
+                | MultipleAccent { offset :: Int, diacriticals :: [Char] }
+                  -- ^ The character at the indicated offset has multiple
+                  --   accents.
+                | MultipleIotaSub { offset :: Int }
                 | InvalidMacron { offset :: Int, base :: Char }
                   -- ^ Explicit macron is not valid on the indicated character
                 | InvalidBreathing { offset :: Int, base :: Char }
                   -- ^ Breathing mark is not valid on the indicated character
-                | MultipleBreathing { offset :: Int, diacriticals :: [Char] }
-                  -- ^ The character at the indicated location has multiple
-                  --   breathing marks
                 | InvalidAccent { offset :: Int, base :: Char }
                   -- ^ Accent is not valid on the indicated character.  This
                   --   includes both consonants with any accent at all, and
                   --   also circumflex on epsilon or omicron.
-                | MultipleAccent { offset :: Int, diacriticals :: [Char] }
-                  -- ^ The character at the indicated offset has multiple
-                  --   accents.
                 | InvalidIotaSub { offset :: Int, base :: Char }
                   -- ^ Iota subscript is not valid on the indicated character.
                 | MacronWithCircumflex { offset :: Int }
@@ -64,11 +67,15 @@ data ParseError = EmptyInput
                   --   and an iota subscript.
                 | TrailingInput { offset :: Int,
                                   text :: String }
-                  -- ^ Input contains trailing characters that don't denote
-                  --   Greek, beginning at the indicated offset
-                | InvalidInput { offset :: Int,
-                                 text :: String }
-                  -- ^ Input at indicated offset is completely invald
+                  -- ^ There's remaining input after parsing a single letter
+                | UnsupportedChar { offset :: Int, char :: Char }
+                  -- ^ Input at indicated offset is not a Greek letter;
+                  --   suppplied character is the erroneous input.
+                | MissingLetter { offset :: Int }
+                  -- ^ The letter at the indicated offset is missing its base
+                  --   letter.
+                | InternalError { offset :: Int, msg :: String }
+                  -- ^ General internal error; shouldn't happen.
                 deriving (Eq, Show)
 
 -- | Parses a string to a Greek word.  All characters in input should be valid
@@ -76,7 +83,7 @@ data ParseError = EmptyInput
 word :: Texty a => a -> Exceptional ParseError Word
 word src =
   do letters <- wordLoop 0 (Texty.toString (normalize src))
-     when (null letters) (Exc.throw EmptyInput)
+     when (null letters) (throw EmptyInput)
      return $ makeWord letters
 
 -- | Parses a string to a single Greek letter; the input should be exactly the
@@ -84,67 +91,132 @@ word src =
 --   normalized.
 letter :: Texty a => a -> Exceptional ParseError Letter
 letter src =
-  do when (Texty.null src) (Exc.throw EmptyInput)
-     (letter, rest) <- parseLetter 0 (Texty.toString (normalize src))
-     unless (null rest) (Exc.throw $ TrailingInput 1 rest)
+  do when (Texty.null src) (throw EmptyInput)
+     (letter, rest) <-
+       addOffset 0 (parseLetter id (Texty.toString (normalize src)))
+     unless (null rest) (throw $ TrailingInput 1 rest)
      return letter
 
 -- | Variant of 'word' that aborts on parse errors, so use this only for
 --   literal Greek words in code and not for user input.
 literalWord :: Texty a => a -> Word
-literalWord src = Exc.run' (word src)
+literalWord src = run' (word src)
 
 -- | Variant of 'letter' that aborts on parse errors, so use this only for
 --   literal Greek letters in code and not for user input.
 literalLetter :: Texty a => a -> Letter
-literalLetter src = Exc.run' (letter src)
+literalLetter src = run' (letter src)
 
 -- | Main loop for parsing a Greek word.  The first argument is the
 --   _letter_-based index of the string, for error messages.
 wordLoop :: Int -> String -> Exceptional ParseError [Letter]
 wordLoop _ [] = return []
 wordLoop index str =
-  do (letter, rest) <- parseLetter index str
+  do (letter, rest) <- addOffset index (parseLetter rewriteExn str)
      restOutput <- wordLoop (index + 1) rest
      return $ letter : restOutput
+  where rewriteExn :: ParseError -> ParseError
+        rewriteExn (UnsupportedChar _ _) = TrailingInput index str
+        rewriteExn exn = exn
+
+addOffset :: Int -> Exceptional ParseError a -> Exceptional ParseError a
+addOffset index exceptionalComp =
+  transformException (addOffset' index) exceptionalComp
+  where addOffset' index exn = exn { offset = index }
+
+-- XXX go back through and stop passing index all over the place
 
 -- | Parses a single letter from a string, which may contain trailing input.
-parseLetter :: Int -> String -> Exceptional ParseError (Letter, String)
-parseLetter index str =
-  case (str =~ letterRegex) :: (String, String, String, [String]) of
-    (_, "", _, _) -> Exc.throw $ InvalidInput index str
-    (_, _, rest, [macron, [base], breathing, accent, iotaSub]) ->
-      do let submatches = Submatches macron base breathing accent iotaSub
-         firstLetter <-
-           case Map.lookup base parserTable of
-             Just parser -> parser index submatches
-             Nothing -> parseConsonant index submatches
-         return (firstLetter, rest)
-    (_, match, _, submatches) ->
-      error
-        (List.concat ["parseLetter (index ",
-                      show index,
-                      "): on matching ",
-                      show match,
-                      ", expected 5 submatches (w/ 2nd a single char); got ",
-                      show submatches])
+parseLetter :: (ParseError -> ParseError) -> String
+               -> Exceptional ParseError (Letter, String)
+parseLetter adjustExn str =
+  transformException adjustExn
+    (do (rawLetter, rest) <- extractRawLetter str
+        firstLetter <-
+          case Map.lookup (rl_base rawLetter) parserTable of
+            Just parser -> parser rawLetter
+            Nothing -> parseConsonant rawLetter
+        return (firstLetter, rest))
 
-letterRegex :: String
-letterRegex = List.concat ["^(_?)",
-                           "([",
-                           Set.elems baseChars,
-                           "])",
-                           "([\x0313\x0314]*)",
-                           "([\x0301\x0300\x0342]*)",
-                           "(\x0345?)"]
+----------------------------------------------------------------------
+--
+-- extracting the first letter and its component parts
+--
+----------------------------------------------------------------------
 
-data Submatches = Submatches { sm_macron :: String,
-                               sm_base :: Char,
-                               sm_breathing :: String,
-                               sm_accent :: String,
-                               sm_iotaSub :: String }
+data RawLetter = RawLetter { rl_macron :: Macron,
+                             rl_base :: Char,
+                             rl_breathing :: Breathing,
+                             rl_accent :: Accent,
+                             rl_iotaSub :: IotaSub }
 
-type ParseFunction = Int -> Submatches -> Exceptional ParseError Letter
+extractRawLetter :: String -> Exceptional ParseError (RawLetter, String)
+extractRawLetter [] =
+  throw $ InternalError { offset = -1, msg = "extractRawLetter: empty input" }
+extractRawLetter str =
+  do (macron, str) <- extractMacron str
+     (baseChar, str) <- extractBaseChar str
+     (breathing, str) <- extractBreathing str
+     (accent, str) <- extractAccent str
+     (iotaSub, str) <- extractIotaSub str
+     return (RawLetter macron baseChar breathing accent iotaSub, str)
+
+extractMacron :: String -> Exceptional ParseError (Macron, String)
+extractMacron s =
+  case span (== '_') s of
+    ("", rest) -> return (NoMacron, rest)
+    ("_", rest) -> return (Macron, rest)
+    (bogus, _) -> throw $ MultipleMacrons { offset = -1 }
+
+extractBaseChar :: String -> Exceptional ParseError (Char, String)
+extractBaseChar [] = throw $ MissingLetter { offset = -1 }
+extractBaseChar (c : rest)
+  | c `Set.member` baseChars = return (c, rest)
+  | otherwise = throw $ UnsupportedChar { offset = -1, char = c }
+
+extractBreathing :: String -> Exceptional ParseError (Breathing, String)
+extractBreathing s =
+  case span isBreathing s of
+    ("", rest) -> return (NoBreathing, rest)
+    ([c], rest)
+      | c == combSmooth -> return (Smooth, rest)
+      | c == combRough -> return (Rough, rest)
+      | otherwise ->
+          throw
+            (InternalError { offset = -1,
+                             msg = "extractBreathing: invalid char: " ++ [c] })
+    (bogus, _) -> throw $ MultipleBreathing { offset = -1,
+                                              diacriticals = bogus }
+  where isBreathing :: Char -> Bool
+        isBreathing c =
+          c == combSmooth || c == combRough
+
+extractAccent :: String -> Exceptional ParseError (Accent, String)
+extractAccent s =
+  case span isAccent s of
+    ("", rest) -> return (NoAccent, rest)
+    ([c], rest)
+      | c == combAcute -> return (Acute, rest)
+      | c == combGrave -> return (Grave, rest)
+      | c == combCirc -> return (Circumflex, rest)
+      | otherwise ->
+          throw
+            (InternalError { offset = -1,
+                             msg = "extractAccent: invalid char: " ++ [c] })
+    (bogus, _) -> throw $ MultipleAccent { offset = -1,
+                                           diacriticals = bogus }
+  where isAccent :: Char -> Bool
+        isAccent c =
+          c == combAcute || c == combGrave || c == combCirc
+
+extractIotaSub :: String -> Exceptional ParseError (IotaSub, String)
+extractIotaSub s =
+  case span (== combIotaSub) s of
+    ("", rest) -> return (NoIotaSub, rest)
+    ([_], rest) -> return (IotaSub, rest)
+    (bogus, _) -> throw $ MultipleIotaSub { offset = -1 }
+
+type ParseFunction = RawLetter -> Exceptional ParseError Letter
 
 parserTable :: Map Char ParseFunction
 parserTable = Map.fromList [
@@ -157,7 +229,7 @@ parserTable = Map.fromList [
   (baseIota, parseIotaUpsilon),
   (capIota, parseIotaUpsilon),
   (baseOmicron, parseEpsilonOmicron),
-  (capOmega, parseEpsilonOmicron),
+  (capOmicron, parseEpsilonOmicron),
   (baseUpsilon, parseIotaUpsilon),
   (capUpsilon, parseIotaUpsilon),
   (baseOmega, parseEtaOmega),
@@ -166,119 +238,56 @@ parserTable = Map.fromList [
   (capRho, parseRho)]
 
 parseAlpha :: ParseFunction
-parseAlpha index submatches =
-  do let m = parseMacron index submatches
-     b <- parseBreathing index submatches
-     a <- parseAccent index submatches
-     let i = parseIotaSub index submatches
-     when (m == Macron && a == Circumflex)
-       (Exc.throw $ MacronWithCircumflex index)
-     when (m == Macron && i == IotaSub)
-       (Exc.throw $ MacronWithIotaSub index)
-     return $ makeLetter (sm_base submatches) b a i m
+parseAlpha (RawLetter macron base breathing accent iotaSub) =
+  do when (macron == Macron && accent == Circumflex)
+       (throw $ MacronWithCircumflex { offset = -1 })
+     when (macron == Macron && iotaSub == IotaSub)
+       (throw $ MacronWithIotaSub { offset = -1 })
+     return $ makeLetter base breathing accent iotaSub macron
 
 parseEpsilonOmicron :: ParseFunction
-parseEpsilonOmicron index submatches =
-  do assertNoDiacritical submatches sm_macron (InvalidMacron index)
-     assertNoDiacritical submatches sm_iotaSub (InvalidIotaSub index)
-     b <- parseBreathing index submatches
-     a <- parseAccent index submatches
-     let base = sm_base submatches
-     when (a == Circumflex)
-       (Exc.throw $ InvalidAccent index base)
-     return $ makeLetter base b a NoIotaSub NoMacron
+parseEpsilonOmicron (RawLetter macron base breathing accent iotaSub) =
+  do when (macron == Macron)
+       (throw $ InvalidMacron (-1) base)
+     when (accent == Circumflex)
+       (throw $ InvalidAccent (-1) base)
+     when (iotaSub == IotaSub)
+       (throw $ InvalidIotaSub (-1) base)
+     return $ makeLetter base breathing accent iotaSub macron
 
 parseEtaOmega :: ParseFunction
-parseEtaOmega index submatches =
-  do assertNoDiacritical submatches sm_macron (InvalidMacron index)
-     b <- parseBreathing index submatches
-     a <- parseAccent index submatches
-     let i = parseIotaSub index submatches
-     return $ makeLetter (sm_base submatches) b a i NoMacron
+parseEtaOmega (RawLetter macron base breathing accent iotaSub) =
+  do when (macron == Macron)
+       (throw $ InvalidMacron (-1) base)
+     return $ makeLetter base breathing accent iotaSub macron
 
 parseIotaUpsilon :: ParseFunction
-parseIotaUpsilon index submatches =
-  do assertNoDiacritical submatches sm_iotaSub (InvalidIotaSub index)
-     let m = parseMacron index submatches
-     b <- parseBreathing index submatches
-     a <- parseAccent index submatches
-     when (a == Circumflex && m == Macron)
-       (Exc.throw $ MacronWithCircumflex index)
-     return $ makeLetter (sm_base submatches) b a NoIotaSub NoMacron
+parseIotaUpsilon (RawLetter macron base breathing accent iotaSub) =
+  do when (iotaSub == IotaSub)
+       (throw $ InvalidIotaSub (-1) base)
+     when (macron == Macron && accent == Circumflex)
+       (throw $ MacronWithCircumflex (-1))
+     return $ makeLetter base breathing accent iotaSub macron
 
 parseRho :: ParseFunction
-parseRho index submatches =
-  do assertNoDiacritical submatches sm_macron (InvalidMacron index)
-     assertNoDiacritical submatches sm_accent (InvalidAccent index)
-     assertNoDiacritical submatches sm_iotaSub (InvalidIotaSub index)
-     b <- parseBreathing index submatches
-     return $ makeLetter (sm_base submatches) b NoAccent NoIotaSub NoMacron
+parseRho (RawLetter macron base breathing accent iotaSub) =
+  do when (macron == Macron)
+       (throw $ InvalidMacron (-1) base)
+     when (accent /= NoAccent)
+       (throw $ InvalidAccent (-1) base)
+     when (iotaSub == IotaSub)
+       (throw $ InvalidIotaSub (-1) base)
+     return $ makeLetter base breathing accent iotaSub macron
 
 -- | Parses a single non-rho consonant, ensuring no diacriticals.
 parseConsonant :: ParseFunction
-parseConsonant index submatches =
-  do assertNoDiacritical submatches sm_macron (InvalidMacron index)
-     assertNoDiacritical submatches sm_breathing (InvalidBreathing index)
-     assertNoDiacritical submatches sm_accent (InvalidAccent index)
-     assertNoDiacritical submatches sm_iotaSub (InvalidIotaSub index)
-     return $
-       makeLetter (sm_base submatches) NoBreathing NoAccent NoIotaSub NoMacron
-
-parseMacron :: Int -> Submatches -> Macron
-parseMacron index (Submatches { sm_macron = m }) =
-  case m of
-    "" -> NoMacron
-    "_" -> Macron
-    bogus -> error (List.concat ["parseMacron (index ",
-                                 show index,
-                                 "): invalid macron: ",
-                                 show bogus])
-
-parseBreathing :: Int -> Submatches -> Exceptional ParseError Breathing
-parseBreathing index submatches =
-  case sm_breathing submatches of
-    [] -> return NoBreathing
-    [x]
-      | x == combSmooth -> return Smooth
-      | x == combRough -> return Rough
-      | otherwise ->
-        error (List.concat ["parseBreathing (index ",
-                            show index,
-                            "): invalid breathing mark: ",
-                            show x])
-    chars -> Exc.throw (MultipleBreathing index chars)
-
-parseAccent :: Int -> Submatches -> Exceptional ParseError Accent
-parseAccent index submatches =
-  case sm_accent submatches of
-    [] -> return NoAccent
-    [x]
-      | x == combAcute -> return Acute
-      | x == combGrave -> return Grave
-      | x == combCirc -> return Circumflex
-      | otherwise ->
-        error (List.concat ["parseAccent (index ",
-                            show index,
-                            "): invalid accent: ",
-                            show x])
-    chars -> Exc.throw (MultipleAccent index chars)
-
-parseIotaSub :: Int -> Submatches -> IotaSub
-parseIotaSub index submatches =
-  case sm_iotaSub submatches of
-    [] -> NoIotaSub
-    (x : rest)
-      | x == combIotaSub && rest == [] -> IotaSub
-      | otherwise ->
-        error (List.concat ["parseIotaSub (index ",
-                            show index,
-                            "): invalid iota sub: ",
-                            show (x : rest)])
-
-assertNoDiacritical :: Submatches -> (Submatches -> String)
-                       -> (Char -> ParseError)
-                       -> Exceptional ParseError ()
-assertNoDiacritical submatches selector exn =
-  unless (List.null (selector submatches))
-    (Exc.throw (exn (sm_base submatches)))
-
+parseConsonant (RawLetter macron base breathing accent iotaSub) =
+  do when (macron == Macron)
+       (throw $ InvalidMacron (-1) base)
+     when (breathing /= NoBreathing)
+       (throw $ InvalidBreathing (-1) base)
+     when (accent /= NoAccent)
+       (throw $ InvalidAccent (-1) base)
+     when (iotaSub == IotaSub)
+       (throw $ InvalidIotaSub (-1) base)
+     return $ makeLetter base breathing accent iotaSub macron
