@@ -118,6 +118,8 @@ wordLoop index str =
      restOutput <- wordLoop (index + 1) rest
      return $ letter : restOutput
 
+-- | Adds the specified offset to an exceptional result of the supplied
+--   computation, if any.
 addOffset :: Int -> Exceptional ParseError a -> Exceptional ParseError a
 addOffset index exceptionalComp =
   transformException (addOffset' index) exceptionalComp
@@ -125,7 +127,8 @@ addOffset index exceptionalComp =
 
 -- XXX go back through and stop passing index all over the place
 
--- | Parses a single letter from a string, which may contain trailing input.
+-- | Parses a single letter from a string.  On success, returns parsed letter
+--   and unparsed input.
 parseLetter :: String -> Exceptional ParseError (Letter, String)
 parseLetter str =
   do (rawLetter, rest) <- extractRawLetter str
@@ -212,6 +215,12 @@ extractIotaSub s =
     ("", rest) -> return (NoIotaSub, rest)
     ([_], rest) -> return (IotaSub, rest)
     (bogus, _) -> throw $ MultipleIotaSub { offset = -1 }
+
+----------------------------------------------------------------------
+--
+-- Converting a raw letter to a Greek letter
+--
+----------------------------------------------------------------------
 
 type ParseFunction = RawLetter -> Exceptional ParseError Letter
 
