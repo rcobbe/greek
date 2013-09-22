@@ -13,56 +13,58 @@ module Data.Greek.Output(
   wordToLaTeX)
 where
 
-import Data.Text.Lazy (Text)
-import qualified Data.Text.Lazy as Text
+import Data.Greek.Texty (Texty)
+import qualified Data.Greek.Texty as Texty
 
 import Data.Greek.Word
 import Data.Greek.UnicodeData
 
 -- | Translates a 'Letter' to input syntax.
-letterToUnicode :: Letter -> Text
+letterToUnicode :: Texty a => Letter -> a
 letterToUnicode l =
   unicodeRenderer prependMacron l
 
 -- | Translates a 'Word' to input syntax.
-wordToUnicode :: Word -> Text
+wordToUnicode :: Texty a => Word -> a
 wordToUnicode wd =
-  Text.concat (map letterToUnicode (getLetters wd))
+  Texty.concat (map letterToUnicode (getLetters wd))
 
 -- | Translates a 'Letter' to LaTeX syntax.
-letterToLaTeX :: Letter -> Text
+letterToLaTeX :: Texty a => Letter -> a
 letterToLaTeX l =
   unicodeRenderer addLatexMacron l
 
 -- | Translates a 'Word' to LaTeX syntax.
-wordToLaTeX :: Word -> Text
+wordToLaTeX :: Texty a => Word -> a
 wordToLaTeX wd =
-  Text.concat (map letterToLaTeX (getLetters wd))
+  Texty.concat (map letterToLaTeX (getLetters wd))
 
 -- | Converts a 'Letter' to its normalized representation.
-unicodeRenderer :: (Text -> Text) -- ^ function to add macron
+unicodeRenderer :: Texty a
+                   => (a -> a)  -- ^ function to add macron
                    -> Letter    -- ^ letter to convert
-                   -> Text
+                   -> a
 unicodeRenderer addMacron l =
   (case getMacron l of
       NoMacron -> id
       Macron -> addMacron)
-  (Text.concat [Text.singleton (getBase l),
-                case getBreathing l of
-                  NoBreathing -> ""
-                  Smooth -> Text.singleton combSmooth
-                  Rough -> Text.singleton combRough,
-                case getAccent l of
-                  NoAccent -> ""
-                  Acute -> Text.singleton combAcute
-                  Grave -> Text.singleton combGrave
-                  Circumflex -> Text.singleton combCirc,
-                case getIotaSub l of
-                  NoIotaSub -> ""
-                  IotaSub -> Text.singleton combIotaSub])
+  (Texty.concat [Texty.singleton (getBase l),
+                 case getBreathing l of
+                   NoBreathing -> Texty.fromString ""
+                   Smooth -> Texty.singleton combSmooth
+                   Rough -> Texty.singleton combRough,
+                 case getAccent l of
+                   NoAccent -> Texty.fromString ""
+                   Acute -> Texty.singleton combAcute
+                   Grave -> Texty.singleton combGrave
+                   Circumflex -> Texty.singleton combCirc,
+                 case getIotaSub l of
+                   NoIotaSub -> Texty.fromString ""
+                   IotaSub -> Texty.singleton combIotaSub])
 
-prependMacron :: Text -> Text
-prependMacron t = Text.append "_" t
+prependMacron :: Texty a => a -> a
+prependMacron t = Texty.cons '_' t
 
-addLatexMacron :: Text -> Text
-addLatexMacron t = Text.concat ["\\_{", t, "}"]
+addLatexMacron :: Texty a => a -> a
+addLatexMacron t =
+  Texty.concat [Texty.fromString "\\_{", t, Texty.singleton '}']

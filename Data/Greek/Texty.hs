@@ -24,6 +24,9 @@ class Texty a where
   -- | The type-appropriate representation of the empty string
   empty :: a
 
+  -- | Construct a texty value that contains a single character
+  singleton :: Char -> a
+
   -- | Add a character to the front of a texty value
   cons :: Char -> a -> a
 
@@ -40,6 +43,9 @@ class Texty a where
   -- | Concatenates two texty values.
   append :: a -> a -> a
 
+  -- | Concatenates a sequence of texty values.
+  concat :: [a] -> a
+
   -- | @span p t@ returns a pair of texty values.  The first is the longest
   --   prefix of @t@ that contains only characters that satisfy @p@, and the
   --   second is the remainder of the original texty value.
@@ -50,12 +56,14 @@ instance Texty String where
   toString = id
 
   empty = []
+  singleton x = [x]
   cons = (:)
   null = Prelude.null
   head = Prelude.head
   tail = Prelude.tail
 
   append = (++)
+  concat = Prelude.concat
 
   span = Prelude.span
 
@@ -64,12 +72,14 @@ instance Texty Text.Text where
   toString = Text.unpack
 
   empty = Text.empty
+  singleton = Text.singleton
   cons = Text.cons
   null = Text.null
   head = Text.head
   tail = Text.tail
 
   append = Text.append
+  concat = Text.concat
 
   span = Text.span
 
@@ -78,11 +88,13 @@ instance Texty Lazy.Text where
   toString = Lazy.unpack
 
   empty = Lazy.empty
+  singleton = Lazy.singleton
   cons = Lazy.cons
   null = Lazy.null
   head = Lazy.head
   tail = Lazy.tail
 
   append = Lazy.append
+  concat = Lazy.concat
 
   span = Lazy.span

@@ -17,7 +17,7 @@ tests =
 allLetterTests =
   "parsing individual letters" ~:
   [show letter ~:
-   assertNoExn letter (GP.letter (letterToUnicode letter))
+   assertNoExn letter (GP.letter ((letterToUnicode letter) :: String))
    | base <- Set.toList baseChars,
      breathing <- [NoBreathing, Smooth, Rough],
      accent <- [NoAccent, Acute, Grave, Circumflex],
