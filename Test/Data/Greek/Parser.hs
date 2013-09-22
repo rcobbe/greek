@@ -1,9 +1,16 @@
 module Test.Data.Greek.Parser(tests) where
 
+import qualified Control.Exceptional as CE
 import Control.Exceptional.HUnit
 import qualified Data.Set as Set
 
+import Data.Text.Lazy (Text)
+import qualified Data.Text.Lazy as Text
+
 import Test.HUnit
+import qualified Test.QuickCheck as QC
+import Test.Data.Greek.LetterGen
+import Test.Utils
 
 import Data.Greek.Word
 import qualified Data.Greek.Parser as GP
@@ -12,8 +19,9 @@ import Data.Greek.UnicodeData
 
 tests =
   "Greek.Parser" ~:
-  [allLetterTests, otherLetterTests, wordTests, errorTests]
+  [allLetterTests, randomWordTests, otherLetterTests, wordTests, errorTests]
 
+-- | Tests parsing all supported letters, individually.
 allLetterTests =
   "parsing individual letters" ~:
   [show letter ~:
@@ -25,6 +33,15 @@ allLetterTests =
      macron <- [NoMacron, Macron],
      validLetter macron base breathing accent iotaSub,
      let letter = makeLetter base breathing accent iotaSub macron]
+
+randomWordTests =
+  "parsing randomly-generated words" ~:
+  testQuickCheck QC.stdArgs propParseCorrect
+
+propParseCorrect :: Word -> Bool
+propParseCorrect w =
+  CE.run (GP.word (Text.concat (map letterToUnicode (getLetters w))))
+  == Right w
 
 -- XXX replace these with more detailed tests.
 otherLetterTests =
