@@ -69,17 +69,17 @@ wordTests =
      (GP.word "ἀδελφός"),
 
    "word with following whitespace" ~:
-   assertExn (GP.TrailingInput 5 "\n")
+   assertExn (GP.UnsupportedChar 5 '\n')
      (GP.word "ἀγορ_ά\n"),
 
    "greek text with following punctuation" ~:
    assertExn
-     (GP.TrailingInput 2 ")")
+     (GP.UnsupportedChar 2 ')')
      (GP.word "οὐ)"),
 
    "greek text with trailing non-greek characters" ~:
    assertExn
-     (GP.TrailingInput 2 "k")
+     (GP.UnsupportedChar 2 'k')
      (GP.word "οὐk")]
 
 -- XXX improve error-case test coverage.

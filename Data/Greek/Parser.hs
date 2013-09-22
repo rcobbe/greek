@@ -42,6 +42,7 @@ import Data.Greek.UnicodeData
 data ParseError = EmptyInput
                   -- ^ Input string is empty
                 | MultipleMacrons { offset :: Int }
+                  -- ^ Multiple macrons on a single letter
                 | MultipleBreathing { offset :: Int, diacriticals :: [Char] }
                   -- ^ The character at the indicated location has multiple
                   --   breathing marks
@@ -49,6 +50,7 @@ data ParseError = EmptyInput
                   -- ^ The character at the indicated offset has multiple
                   --   accents.
                 | MultipleIotaSub { offset :: Int }
+                  -- ^ Multiple iota subscripts on a single letter
                 | InvalidMacron { offset :: Int, base :: Char }
                   -- ^ Explicit macron is not valid on the indicated character
                 | InvalidBreathing { offset :: Int, base :: Char }
@@ -67,7 +69,7 @@ data ParseError = EmptyInput
                   --   and an iota subscript.
                 | TrailingInput { offset :: Int,
                                   text :: String }
-                  -- ^ There's remaining input after parsing a single letter
+                  -- ^ There's remaining input after parsing a single letter.
                 | UnsupportedChar { offset :: Int, char :: Char }
                   -- ^ Input at indicated offset is not a Greek letter;
                   --   suppplied character is the erroneous input.
@@ -93,7 +95,7 @@ letter :: Texty a => a -> Exceptional ParseError Letter
 letter src =
   do when (Texty.null src) (throw EmptyInput)
      (letter, rest) <-
-       addOffset 0 (parseLetter id (Texty.toString (normalize src)))
+       addOffset 0 (parseLetter (Texty.toString (normalize src)))
      unless (null rest) (throw $ TrailingInput 1 rest)
      return letter
 
@@ -112,12 +114,9 @@ literalLetter src = run' (letter src)
 wordLoop :: Int -> String -> Exceptional ParseError [Letter]
 wordLoop _ [] = return []
 wordLoop index str =
-  do (letter, rest) <- addOffset index (parseLetter rewriteExn str)
+  do (letter, rest) <- addOffset index (parseLetter str)
      restOutput <- wordLoop (index + 1) rest
      return $ letter : restOutput
-  where rewriteExn :: ParseError -> ParseError
-        rewriteExn (UnsupportedChar _ _) = TrailingInput index str
-        rewriteExn exn = exn
 
 addOffset :: Int -> Exceptional ParseError a -> Exceptional ParseError a
 addOffset index exceptionalComp =
@@ -127,16 +126,14 @@ addOffset index exceptionalComp =
 -- XXX go back through and stop passing index all over the place
 
 -- | Parses a single letter from a string, which may contain trailing input.
-parseLetter :: (ParseError -> ParseError) -> String
-               -> Exceptional ParseError (Letter, String)
-parseLetter adjustExn str =
-  transformException adjustExn
-    (do (rawLetter, rest) <- extractRawLetter str
-        firstLetter <-
-          case Map.lookup (rl_base rawLetter) parserTable of
-            Just parser -> parser rawLetter
-            Nothing -> parseConsonant rawLetter
-        return (firstLetter, rest))
+parseLetter :: String -> Exceptional ParseError (Letter, String)
+parseLetter str =
+  do (rawLetter, rest) <- extractRawLetter str
+     firstLetter <-
+       case Map.lookup (rl_base rawLetter) parserTable of
+         Just parser -> parser rawLetter
+         Nothing -> parseConsonant rawLetter
+     return (firstLetter, rest)
 
 ----------------------------------------------------------------------
 --
