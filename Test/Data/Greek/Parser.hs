@@ -2,6 +2,7 @@ module Test.Data.Greek.Parser(tests) where
 
 import qualified Control.Exceptional as CE
 import Control.Exceptional.HUnit
+import qualified Data.List as List
 import qualified Data.Set as Set
 
 import Data.Text.Lazy (Text)
@@ -14,25 +15,29 @@ import Test.Utils
 
 import Data.Greek.Word
 import qualified Data.Greek.Parser as GP
+import Data.Greek.Normalize
 import Data.Greek.Output
 import Data.Greek.UnicodeData
 
 tests =
   "Greek.Parser" ~:
-  [allLetterTests, randomWordTests, otherLetterTests, wordTests, errorTests]
+  [validLetterTests, randomWordTests, invalidLetterTests, errorTests]
 
 -- | Tests parsing all supported letters, individually.
-allLetterTests =
+validLetterTests =
   "parsing individual letters" ~:
-  [show letter ~:
-   assertNoExn letter (GP.letter ((letterToUnicode letter) :: String))
-   | base <- Set.toList baseChars,
-     breathing <- [NoBreathing, Smooth, Rough],
-     accent <- [NoAccent, Acute, Grave, Circumflex],
-     iotaSub <- [NoIotaSub, IotaSub],
-     macron <- [NoMacron, Macron],
-     validLetter macron base breathing accent iotaSub,
-     let letter = makeLetter base breathing accent iotaSub macron]
+  map makeSuccessfulParseTest validCombinations
+  where makeSuccessfulParseTest (macron, base, breathing, accent, iotaSub) =
+          let letter = makeLetter base breathing accent iotaSub macron
+              input = (letterToUnicode letter) :: String
+          in (show letter ~: assertNoExn letter (GP.letter input))
+
+invalidLetterTests =
+  "invalid letter tests" ~:
+  map makeUnsuccessfulParseTest invalidCombinations
+  where makeUnsuccessfulParseTest (macron, base, breathing, accent, iotaSub) =
+          let input = makeInput macron base breathing accent iotaSub
+          in (input ~: assertExn' (\ _ -> return ()) (GP.letter input))
 
 randomWordTests =
   "parsing randomly-generated words" ~:
@@ -43,64 +48,87 @@ propParseCorrect w =
   CE.run (GP.word (Text.concat (map letterToUnicode (getLetters w))))
   == Right w
 
--- XXX replace these with more detailed tests.
-otherLetterTests =
-  "other tests involving parsing letters" ~:
-  ["spurious diacritical" ~:
-   assertExn' (\ _ -> return ()) (GP.letter [baseEpsilon, combIotaSub]),
+makeInput :: Macron -> Char -> Breathing -> Accent -> IotaSub -> String
+makeInput macron base breathing accent iotaSub =
+  Prelude.concat [
+    case macron of
+      NoMacron -> ""
+      Macron -> "_",
+    [base],
+    case breathing of
+      NoBreathing -> ""
+      Smooth -> [combSmooth]
+      Rough -> [combRough],
+    case accent of
+      NoAccent -> ""
+      Acute -> [combAcute]
+      Grave -> [combGrave]
+      Circumflex -> [combCirc],
+    case iotaSub of
+      NoIotaSub -> ""
+      IotaSub -> [combIotaSub]
+    ]
+
+errorTests =
+  "parsing errors" ~:
+  ["empty input (letter)" ~:
+   assertExn GP.EmptyInput (GP.letter ""),
+
+   "empty input (word)" ~:
+   assertExn GP.EmptyInput (GP.word ""),
+
+   "multiple breath marks" ~:
+   assertExn (GP.MultipleBreathing 1 [combSmooth, combRough])
+   (GP.word ("ου" ++ [combSmooth, combRough] ++ "τος")),
+
+   "multiple accents" ~:
+   assertExn (GP.MultipleAccent 1 [combAcute, combCirc])
+   (GP.word ("ου" ++ [combAcute, combCirc] ++ "τος")),
+
+   "invalid macron" ~:
+   assertExn (GP.InvalidMacron 2 'ε') (GP.word "αβ_έ"),
+
+   "invalid breathing" ~:
+   assertExn (GP.InvalidBreathing 0 'β')
+   (GP.word ('β' : combSmooth : "λάπτω")),
+
+   "invalid accent" ~:
+   assertExn (GP.InvalidAccent 0 'β')
+   (GP.word ('β' : combGrave : "λάπτω")),
+
+   "invalid iota subscript" ~:
+   assertExn (GP.InvalidIotaSub 2 'ε')
+   (GP.word ("ἀρε" ++ [combIotaSub] ++ "τη")),
+
+   "macron and circumflex" ~:
+   assertExn (GP.MacronWithCircumflex 2)
+   (GP.word "βλ_ᾶπτω"),
+
+   "macron and iota sub" ~:
+   assertExn (GP.MacronWithIotaSub 4)
+   (GP.word "ἀγορ_ᾳ"),
 
    "trailing input" ~:
-   assertExn (GP.TrailingInput 1 "γ")
-     (GP.letter "ᾄγ")
-  ]
+   assertExn (GP.TrailingInput 1 (normalize "γορ_ά"))
+   (GP.letter "ἀγορ_ά"),
 
-wordTests =
-  "parsing complete words" ~:
-  ["standalone word" ~:
-   assertNoExn
-     (makeWord [makeLetter baseAlpha Smooth NoAccent NoIotaSub NoMacron,
-                makeLetter baseDelta NoBreathing NoAccent NoIotaSub NoMacron,
-                makeLetter baseEpsilon NoBreathing NoAccent NoIotaSub NoMacron,
-                makeLetter baseLambda NoBreathing NoAccent NoIotaSub NoMacron,
-                makeLetter basePhi NoBreathing NoAccent NoIotaSub NoMacron,
-                makeLetter baseOmicron NoBreathing Acute NoIotaSub NoMacron,
-                makeLetter baseFinalSigma
-                  NoBreathing NoAccent NoIotaSub NoMacron])
-     (GP.word "ἀδελφός"),
+   "unsupported character" ~:
+   assertExn (GP.UnsupportedChar 2 'x')
+   (GP.word "οὐx"),
 
-   "word with following whitespace" ~:
-   assertExn (GP.UnsupportedChar 5 '\n')
-     (GP.word "ἀγορ_ά\n"),
+   "missing letter" ~:
+   assertExn (GP.MissingLetter 1)
+   (GP.word "β_")]
 
-   "greek text with following punctuation" ~:
-   assertExn
-     (GP.UnsupportedChar 2 ')')
-     (GP.word "οὐ)"),
+allCombinations =
+  [(macron, base, breathing, accent, iotaSub)
+  | macron <- [NoMacron, Macron],
+    base <- Set.toList baseChars,
+    breathing <- [NoBreathing, Smooth, Rough],
+    accent <- [NoAccent, Acute, Grave, Circumflex],
+    iotaSub <- [NoIotaSub, IotaSub]]
 
-   "greek text with trailing non-greek characters" ~:
-   assertExn
-     (GP.UnsupportedChar 2 'k')
-     (GP.word "οὐk")]
-
--- XXX improve error-case test coverage.
-
-errorTests = "customized parsing errors" ~:
-  ["alpha with macron and circumflex" ~:
-   assertExn
-     (GP.MacronWithCircumflex 0)
-     (GP.letter "_ᾶ"),
-
-   "alpha with macron and iota subscript" ~:
-   assertExn
-     (GP.MacronWithIotaSub 0)
-     (GP.letter "_ᾳ"),
-
-   "iota with macron & circumflex" ~:
-   assertExn
-     (GP.MacronWithCircumflex 0)
-     (GP.letter "_ῖ"),
-
-   "upsilon with macron and circumflex" ~:
-   assertExn
-     (GP.MacronWithCircumflex 0)
-     (GP.letter "_ῦ")]
+(validCombinations, invalidCombinations) =
+  List.partition valid' allCombinations
+  where valid' (macron, base, breathing, accent, iotaSub) =
+          validLetter macron base breathing accent iotaSub
