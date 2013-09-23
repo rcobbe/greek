@@ -41,16 +41,12 @@ import Data.Greek.UnicodeData
 --   the input, as the automatic normalization affects the latter.
 data ParseError = EmptyInput
                   -- ^ Input string is empty
-                | MultipleMacrons { offset :: Int }
-                  -- ^ Multiple macrons on a single letter
                 | MultipleBreathing { offset :: Int, diacriticals :: [Char] }
                   -- ^ The character at the indicated location has multiple
                   --   breathing marks
                 | MultipleAccent { offset :: Int, diacriticals :: [Char] }
                   -- ^ The character at the indicated offset has multiple
                   --   accents.
-                | MultipleIotaSub { offset :: Int }
-                  -- ^ Multiple iota subscripts on a single letter
                 | InvalidMacron { offset :: Int, base :: Char }
                   -- ^ Explicit macron is not valid on the indicated character
                 | InvalidBreathing { offset :: Int, base :: Char }
@@ -166,7 +162,10 @@ extractMacron s =
   case span (== '_') s of
     ("", rest) -> return (NoMacron, rest)
     ("_", rest) -> return (Macron, rest)
-    (bogus, _) -> throw $ MultipleMacrons { offset = -1 }
+    (bogus, _) ->
+      -- normalization should dedup all diacriticals
+      throw $ (InternalError { offset = -1,
+                               msg = "multiple macrons" })
 
 extractBaseChar :: String -> Exceptional ParseError (Char, String)
 extractBaseChar [] = throw $ MissingLetter { offset = -1 }
@@ -214,7 +213,9 @@ extractIotaSub s =
   case span (== combIotaSub) s of
     ("", rest) -> return (NoIotaSub, rest)
     ([_], rest) -> return (IotaSub, rest)
-    (bogus, _) -> throw $ MultipleIotaSub { offset = -1 }
+    (bogus, _) ->
+      throw $ (InternalError { offset = -1,
+                               msg = "multiple iota subscripts" })
 
 ----------------------------------------------------------------------
 --
