@@ -50,16 +50,16 @@ unicodeRenderer addMacron l =
       Macron -> addMacron)
   (Texty.concat [Texty.singleton (getBase l),
                  case getBreathing l of
-                   NoBreathing -> Texty.fromString ""
+                   NoBreathing -> Texty.empty
                    Smooth -> Texty.singleton combSmooth
                    Rough -> Texty.singleton combRough,
                  case getAccent l of
-                   NoAccent -> Texty.fromString ""
+                   NoAccent -> Texty.empty
                    Acute -> Texty.singleton combAcute
                    Grave -> Texty.singleton combGrave
                    Circumflex -> Texty.singleton combCirc,
                  case getIotaSub l of
-                   NoIotaSub -> Texty.fromString ""
+                   NoIotaSub -> Texty.empty
                    IotaSub -> Texty.singleton combIotaSub])
 
 prependMacron :: Texty a => a -> a
