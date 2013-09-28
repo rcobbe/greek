@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Defines routines for rendering Greek 'Letter's and 'Word's into 'String's,
---   either in the input syntax (with leading underscore to indicate long
---   vowels) or in LaTeX syntax (with leading backslash and underscore to
---   indicate long vowels).  Both syntaxes are rendered in normalized order;
---   see "Data.Greek.Normalize" for details.
+-- | Defines routines for producing textual representations of Greek 'Letter's
+--   and 'Word's , either in the input syntax (with leading underscore to
+--   indicate long vowels) or in LaTeX syntax (with leading backslash and
+--   underscore to indicate long vowels).  Both syntaxes are rendered in
+--   normalized order; see "Data.Greek.Normalize" for details.
 
 module Data.Greek.Output(
   letterToUnicode,

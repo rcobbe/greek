@@ -121,8 +121,6 @@ addOffset index exceptionalComp =
   transformException (addOffset' index) exceptionalComp
   where addOffset' index exn = exn { offset = index }
 
--- XXX go back through and stop passing index all over the place
-
 -- | Parses a single letter from a string.  On success, returns parsed letter
 --   and unparsed input.
 parseLetter :: String -> Exceptional ParseError (Letter, String)
@@ -140,6 +138,7 @@ parseLetter str =
 --
 ----------------------------------------------------------------------
 
+-- Raw letter from input.  Not guaranteed to be a valid Greek letter.
 data RawLetter = RawLetter { rl_macron :: Macron,
                              rl_base :: Char,
                              rl_breathing :: Breathing,
