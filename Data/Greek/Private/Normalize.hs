@@ -29,6 +29,7 @@ import qualified Data.Set as Set
 
 import Data.Textual (Textual)
 import qualified Data.Textual as Textual
+
 import Data.Greek.UnicodeData
 
 -- | Normalizes all polytonic Greek text in a string.  Each maximal substring
