@@ -17,14 +17,13 @@ Library
   Build-Depends:
     base == 4.6.*,
     containers == 0.5.*,
-    text == 0.11.*,
-    exceptional == 0.2.*
+    exceptional == 0.2.*,
+    textual
   Ghc-options: -fwarn-incomplete-patterns
   Exposed-modules:
     Data.Greek.Normalize,
     Data.Greek.Output,
     Data.Greek.Parser,
-    Data.Greek.Texty,
     Data.Greek.UnicodeData
     Data.Greek.Word
   Other-modules:
@@ -45,4 +44,5 @@ Test-Suite greek-tests
     HUnit == 1.2.*,
     QuickCheck == 2.6.*,
     test-utils == 1.2.*,
-    text == 0.11.*
+    text == 0.11.*,
+    textual

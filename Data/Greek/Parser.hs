@@ -21,8 +21,8 @@ import qualified Data.Set as Set
 
 import Control.Exceptional
 
-import Data.Greek.Texty (Texty)
-import qualified Data.Greek.Texty as Texty
+import Data.Textual (Textual)
+import qualified Data.Textual as Textual
 import Data.Greek.Word
 import Data.Greek.Normalize
 import Data.Greek.UnicodeData
@@ -78,31 +78,31 @@ data ParseError = EmptyInput
 
 -- | Parses a string to a Greek word.  All characters in input should be valid
 --   Greek, although the input doesn't have to be normalized.
-word :: Texty a => a -> Exceptional ParseError Word
+word :: Textual a => a -> Exceptional ParseError Word
 word src =
-  do letters <- wordLoop 0 (Texty.toString (normalize src))
+  do letters <- wordLoop 0 (Textual.toString (normalize src))
      when (null letters) (throw EmptyInput)
      return $ makeWord letters
 
 -- | Parses a string to a single Greek letter; the input should be exactly the
 --   Greek for that letter and nothing else.  The input does not need to be
 --   normalized.
-letter :: Texty a => a -> Exceptional ParseError Letter
+letter :: Textual a => a -> Exceptional ParseError Letter
 letter src =
-  do when (Texty.null src) (throw EmptyInput)
+  do when (Textual.null src) (throw EmptyInput)
      (letter, rest) <-
-       addOffset 0 (parseLetter (Texty.toString (normalize src)))
+       addOffset 0 (parseLetter (Textual.toString (normalize src)))
      unless (null rest) (throw $ TrailingInput 1 rest)
      return letter
 
 -- | Variant of 'word' that aborts on parse errors, so use this only for
 --   literal Greek words in code and not for user input.
-literalWord :: Texty a => a -> Word
+literalWord :: Textual a => a -> Word
 literalWord src = run' (word src)
 
 -- | Variant of 'letter' that aborts on parse errors, so use this only for
 --   literal Greek letters in code and not for user input.
-literalLetter :: Texty a => a -> Letter
+literalLetter :: Textual a => a -> Letter
 literalLetter src = run' (letter src)
 
 -- | Main loop for parsing a Greek word.  The first argument is the
