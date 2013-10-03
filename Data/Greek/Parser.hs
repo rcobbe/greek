@@ -21,7 +21,7 @@ import qualified Data.Set as Set
 
 import Control.Exceptional
 
-import Data.Textual (Textual)
+import Data.Textual (Textual, View(..), view)
 import qualified Data.Textual as Textual
 import Data.Greek.Word
 import Data.Greek.Normalize
@@ -80,7 +80,7 @@ data ParseError = EmptyInput
 --   Greek, although the input doesn't have to be normalized.
 word :: Textual a => a -> Exceptional ParseError Word
 word src =
-  do letters <- wordLoop 0 (Textual.toString (normalize src))
+  do letters <- wordLoop 0 (normalize src)
      when (null letters) (throw EmptyInput)
      return $ makeWord letters
 
@@ -91,7 +91,7 @@ letter :: Textual a => a -> Exceptional ParseError Letter
 letter src =
   do when (Textual.null src) (throw EmptyInput)
      (letter, rest) <-
-       addOffset 0 (parseLetter (Textual.toString (normalize src)))
+       addOffset 0 (parseLetter (normalize src))
      unless (null rest) (throw $ TrailingInput 1 rest)
      return letter
 
@@ -107,12 +107,13 @@ literalLetter src = run' (letter src)
 
 -- | Main loop for parsing a Greek word.  The first argument is the
 --   _letter_-based index of the string, for error messages.
-wordLoop :: Int -> String -> Exceptional ParseError [Letter]
-wordLoop _ [] = return []
-wordLoop index str =
-  do (letter, rest) <- addOffset index (parseLetter str)
-     restOutput <- wordLoop (index + 1) rest
-     return $ letter : restOutput
+wordLoop :: Textual a => Int -> a -> Exceptional ParseError [Letter]
+wordLoop index txt =
+  if | Textual.null txt -> return []
+     | otherwise ->
+        do (letter, rest) <- addOffset index (parseLetter txt)
+           restOutput <- wordLoop (index + 1) rest
+           return $ letter : restOutput
 
 -- | Adds the specified offset to an exceptional result of the supplied
 --   computation, if any.
@@ -123,9 +124,9 @@ addOffset index exceptionalComp =
 
 -- | Parses a single letter from a string.  On success, returns parsed letter
 --   and unparsed input.
-parseLetter :: String -> Exceptional ParseError (Letter, String)
-parseLetter str =
-  do (rawLetter, rest) <- extractRawLetter str
+parseLetter :: Textual a => a -> Exceptional ParseError (Letter, a)
+parseLetter txt =
+  do (rawLetter, rest) <- extractRawLetter txt
      firstLetter <-
        case Map.lookup (rl_base rawLetter) parserTable of
          Just parser -> parser rawLetter
@@ -138,62 +139,66 @@ parseLetter str =
 --
 ----------------------------------------------------------------------
 
--- Raw letter from input.  Not guaranteed to be a valid Greek letter.
+-- | Raw letter from input.  Not guaranteed to be a valid Greek letter.
 data RawLetter = RawLetter { rl_macron :: Macron,
                              rl_base :: Char,
                              rl_breathing :: Breathing,
                              rl_accent :: Accent,
                              rl_iotaSub :: IotaSub }
 
-extractRawLetter :: String -> Exceptional ParseError (RawLetter, String)
-extractRawLetter [] =
+-- | Extracts the first letter from the input without checking for validity.
+--   Returns the extracted letter and the remaining input.
+extractRawLetter :: Textual a => a -> Exceptional ParseError (RawLetter, a)
+extractRawLetter (view -> Empty) =
   throw $ InternalError { offset = -1, msg = "extractRawLetter: empty input" }
-extractRawLetter str =
-  do (macron, str) <- extractMacron str
-     (baseChar, str) <- extractBaseChar str
-     (breathing, str) <- extractBreathing str
-     (accent, str) <- extractAccent str
-     (iotaSub, str) <- extractIotaSub str
-     return (RawLetter macron baseChar breathing accent iotaSub, str)
+extractRawLetter txt =
+  do (macron, txt) <- extractMacron txt
+     (baseChar, txt) <- extractBaseChar txt
+     (breathing, txt) <- extractBreathing txt
+     (accent, txt) <- extractAccent txt
+     (iotaSub, txt) <- extractIotaSub txt
+     return (RawLetter macron baseChar breathing accent iotaSub, txt)
 
-extractMacron :: String -> Exceptional ParseError (Macron, String)
-extractMacron s =
-  case span (== '_') s of
-    ("", rest) -> return (NoMacron, rest)
-    ("_", rest) -> return (Macron, rest)
-    (bogus, _) ->
+-- | Extracts an optional macron from the input; returns macron and remaining
+--   input.
+extractMacron :: Textual a => a -> Exceptional ParseError (Macron, a)
+extractMacron txt =
+  case Textual.span (== '_') s of
+    (view -> Empty) -> return (NoMacron, rest)
+    (view -> '_' :|: (view -> Empty)) -> return (Macron, rest)
+    _ ->
       -- normalization should dedup all diacriticals
-      throw $ (InternalError { offset = -1,
-                               msg = "multiple macrons" })
+      throw $ InternalError { offset = -1, msg = "multiple macrons" }
 
-extractBaseChar :: String -> Exceptional ParseError (Char, String)
-extractBaseChar [] = throw $ MissingLetter { offset = -1 }
-extractBaseChar (c : rest)
+extractBaseChar :: Textual a => a -> Exceptional ParseError (Char, a)
+extractBaseChar (view -> Empty) = throw $ MissingLetter { offset = -1 }
+extractBaseChar (view -> c :|: rest)
   | c `Set.member` baseChars = return (c, rest)
   | otherwise = throw $ UnsupportedChar { offset = -1, char = c }
 
-extractBreathing :: String -> Exceptional ParseError (Breathing, String)
+extractBreathing :: Textual a => a -> Exceptional ParseError (Breathing, a)
 extractBreathing s =
-  case span isBreathing s of
-    ("", rest) -> return (NoBreathing, rest)
-    ([c], rest)
+  case Textual.span isBreathing s of
+    (view -> Empty, rest) -> return (NoBreathing, rest)
+    (view -> c :|: (view -> Empty), rest)
       | c == combSmooth -> return (Smooth, rest)
       | c == combRough -> return (Rough, rest)
       | otherwise ->
           throw
             (InternalError { offset = -1,
                              msg = "extractBreathing: invalid char: " ++ [c] })
-    (bogus, _) -> throw $ MultipleBreathing { offset = -1,
-                                              diacriticals = bogus }
+    (bogus, _) ->
+      throw $ MultipleBreathing { offset = -1,
+                                  diacriticals = Textual.toString bogus }
   where isBreathing :: Char -> Bool
         isBreathing c =
           c == combSmooth || c == combRough
 
 extractAccent :: String -> Exceptional ParseError (Accent, String)
 extractAccent s =
-  case span isAccent s of
-    ("", rest) -> return (NoAccent, rest)
-    ([c], rest)
+  case Textual.span isAccent s of
+    (view -> Empty, rest) -> return (NoAccent, rest)
+    (view -> c :|: (view -> Empty), rest)
       | c == combAcute -> return (Acute, rest)
       | c == combGrave -> return (Grave, rest)
       | c == combCirc -> return (Circumflex, rest)
@@ -210,9 +215,9 @@ extractAccent s =
 extractIotaSub :: String -> Exceptional ParseError (IotaSub, String)
 extractIotaSub s =
   case span (== combIotaSub) s of
-    ("", rest) -> return (NoIotaSub, rest)
-    ([_], rest) -> return (IotaSub, rest)
-    (bogus, _) ->
+    (view -> Empty, rest) -> return (NoIotaSub, rest)
+    (view -> _ :|: (view -> Empty), rest) -> return (IotaSub, rest)
+    (_, _) ->
       throw $ (InternalError { offset = -1,
                                msg = "multiple iota subscripts" })
 
