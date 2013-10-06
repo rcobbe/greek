@@ -41,7 +41,10 @@ data Word = Word [Letter]
 getLetters :: Word -> [Letter]
 getLetters (Word xs) = xs
 
--- | Representation of a single Greek letter.
+-- | Representation of a single Greek letter.  The 'Ord' instance for 'Letter'
+--   doesn't correspond to the lexicographical ordering we use for 'Word'; it's
+--   here only to allow us to use Letters with 'Data.Map.Map' and
+--   'Data.Set.Set', etc.
 data Letter = Letter {
   -- | Greek letter, with no diacriticals.  Must be a Unicode character in one
   --   of the ranges \\x0391-\\x03a9, \\x03b1-\\x03c9, or \\x03dc-\\x03dd.
@@ -195,11 +198,23 @@ renderBase c = letterTable ! c
 --   macrons, and then finally case.
 --
 --   We have to write our own order relation on Greek words, because the
---   locale-aware Unicode routines don't do quite what we want.  In particular,
---   they order ᾳ between α and β, but Liddell and Scott treat it as a variant
---   of α, using the iota subscript as a tie breaker: ῥαδινός, ῥᾴδιος, ...,
---   ῥαθάμιγξ, ..., ῥᾳθυμέω, ..., ῥαιβόκρανος.  We follow Liddell & Scott.
+--   locale-aware Unicode routines don't quite match Liddell and Scott.  In
+--   particular, Unicode orders alpha-with-iota-subscript between plain alpha
+--   and beta, but Liddell and Scott treat it as a variant of alpha, using the
+--   iota subscript as a tie breaker:
+--   &#x1fe5;&#x03b1;&#x03b4;&#x03b9;&#x03bd;&#x03cc;&#x03c2;,
+--   &#x1fe5;&#x1fb4;&#x03b4;&#x03b9;&#x03bf;&#x03c2;,
+--   ...,
+--   &#x1fe5;&#x03b1;&#x03b8;&#x03ac;&#x03bc;&#x03b9;&#x03b3;&#x03be;,
+--   ...,
+--   &#x1fe5;&#x1fb3;&#x03b8;&#x03c5;&#x03bc;&#x03ad;&#x03c9;,
+--   ...,
+--   &#x1fe5;&#x03b1;&#x03b9;&#x03b2;&#x03cc;&#x03ba;&#x03c1;&#x03b1;&#x03bd;&#x03bf;&#x03c2;.
+--   We follow Liddell and Scott.
 instance Ord Word where
+  -- The examples in the Haddock above, which we render in HTML entities to
+  -- avoid problems with Haddock, read as follows:
+  -- ῥαδινός, ῥᾴδιος, ..., ῥαθάμιγξ, ..., ῥᾳθυμέω, ..., ῥαιβόκρανος
   compare w1 w2 =
     let xs = getLetters w1
         ys = getLetters w2

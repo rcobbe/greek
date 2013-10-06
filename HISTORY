@@ -1,3 +1,7 @@
+New since 2.0:
+
+  - Haddock improvements.
+
 New in 2.0:
 
   - Moved 'Ord' instance for 'Word' into Data.Greek.Word, to avoid
