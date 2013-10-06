@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiWayIf, ViewPatterns #-}
+
 -- | Parses external representations of Greek Text.  The input should be
 --   Unicode text, containing only Greek letters and combining diacriticals, in
 --   the format defined by 'Data.Greek.Normalize.normalize'.  We also allow
@@ -92,7 +94,8 @@ letter src =
   do when (Textual.null src) (throw EmptyInput)
      (letter, rest) <-
        addOffset 0 (parseLetter (normalize src))
-     unless (null rest) (throw $ TrailingInput 1 rest)
+     unless (Textual.null rest)
+       (throw $ TrailingInput 1 (Textual.toString rest))
      return letter
 
 -- | Variant of 'word' that aborts on parse errors, so use this only for
@@ -163,9 +166,9 @@ extractRawLetter txt =
 --   input.
 extractMacron :: Textual a => a -> Exceptional ParseError (Macron, a)
 extractMacron txt =
-  case Textual.span (== '_') s of
-    (view -> Empty) -> return (NoMacron, rest)
-    (view -> '_' :|: (view -> Empty)) -> return (Macron, rest)
+  case Textual.span (== '_') txt of
+    (view -> Empty, rest) -> return (NoMacron, rest)
+    (view -> '_' :|: (view -> Empty), rest) -> return (Macron, rest)
     _ ->
       -- normalization should dedup all diacriticals
       throw $ InternalError { offset = -1, msg = "multiple macrons" }
@@ -175,6 +178,7 @@ extractBaseChar (view -> Empty) = throw $ MissingLetter { offset = -1 }
 extractBaseChar (view -> c :|: rest)
   | c `Set.member` baseChars = return (c, rest)
   | otherwise = throw $ UnsupportedChar { offset = -1, char = c }
+extractBaseChar _ = error "view-pattern error"
 
 extractBreathing :: Textual a => a -> Exceptional ParseError (Breathing, a)
 extractBreathing s =
@@ -194,9 +198,9 @@ extractBreathing s =
         isBreathing c =
           c == combSmooth || c == combRough
 
-extractAccent :: String -> Exceptional ParseError (Accent, String)
-extractAccent s =
-  case Textual.span isAccent s of
+extractAccent :: Textual a => a -> Exceptional ParseError (Accent, a)
+extractAccent txt =
+  case Textual.span isAccent txt of
     (view -> Empty, rest) -> return (NoAccent, rest)
     (view -> c :|: (view -> Empty), rest)
       | c == combAcute -> return (Acute, rest)
@@ -206,15 +210,16 @@ extractAccent s =
           throw
             (InternalError { offset = -1,
                              msg = "extractAccent: invalid char: " ++ [c] })
-    (bogus, _) -> throw $ MultipleAccent { offset = -1,
-                                           diacriticals = bogus }
+    (bogus, _) ->
+      throw $ MultipleAccent { offset = -1,
+                               diacriticals = Textual.toString bogus }
   where isAccent :: Char -> Bool
         isAccent c =
           c == combAcute || c == combGrave || c == combCirc
 
-extractIotaSub :: String -> Exceptional ParseError (IotaSub, String)
-extractIotaSub s =
-  case span (== combIotaSub) s of
+extractIotaSub :: Textual a => a -> Exceptional ParseError (IotaSub, a)
+extractIotaSub txt =
+  case Textual.span (== combIotaSub) txt of
     (view -> Empty, rest) -> return (NoIotaSub, rest)
     (view -> _ :|: (view -> Empty), rest) -> return (IotaSub, rest)
     (_, _) ->
