@@ -23,6 +23,7 @@ import qualified Data.Set as Set
 
 import Control.Exceptional
 
+import Data.List (intercalate)
 import Data.Textual (Textual, View(..), view)
 import qualified Data.Textual as Textual
 import Data.Greek.Word
@@ -76,7 +77,70 @@ data ParseError = EmptyInput
                   --   letter.
                 | InternalError { offset :: Int, msg :: String }
                   -- ^ General internal error; shouldn't happen.
-                deriving (Eq, Show)
+                deriving (Eq)
+
+instance Show ParseError where
+  show err = (offsetPrefix err) ++ (formatError err)
+
+-- | Generates an "at offset N: " prefix for parser error messages, where
+--   appropriate.
+offsetPrefix :: ParseError -> String
+offsetPrefix err
+  | err == EmptyInput = ""
+  | otherwise         = ("at offset " ++ (show (offset err)) ++ ": ")
+
+-- | Formats the (non-offset) portion of the error into a message suitable for
+--   users.
+formatError :: ParseError -> String
+formatError EmptyInput = "empty input string"
+formatError (MultipleBreathing _ marks) =
+  "multiple breathing marks: " ++ commaSepMap showBreathing marks
+formatError (MultipleAccent _ accents) =
+  "multiple accents: " ++ commaSepMap showAccent accents
+formatError (InvalidMacron _ base) =
+  "macron invalid on base letter " ++ [base]
+formatError (InvalidBreathing _ base) =
+  "breathing mark invalid on base letter " ++ [base]
+formatError (InvalidAccent _ base) =
+  "accent invalid on base letter " ++ [base]
+formatError (InvalidIotaSub _ base) =
+  "iota subscript invalid on base letter " ++ [base]
+formatError (MacronWithCircumflex _) =
+  "macron and circumflex may not both appear on the same letter"
+formatError (MacronWithIotaSub _) =
+  "macron and iota subscript may not both appear on the same letter"
+formatError (TrailingInput _ extra) =
+  "trailing input after an input letter: " ++ show extra
+formatError (UnsupportedChar _ c) =
+  "unsupported character in input: " ++ show c
+formatError (MissingLetter _) =
+  "missing base letter"
+formatError (InternalError _ msg) =
+  "internal greek parser error: " ++ msg
+
+-- XXX what is keybinding in haskell mode to insert & align equals sign?
+
+-- | Renders a breathing mark character into a more readable form for error
+--   messages.
+showBreathing :: Char -> String
+showBreathing c
+  | c == combSmooth = "smooth"
+  | c == combRough  = "rough"
+  | otherwise       = error ("showBreathing: invalid breathing: " ++ [c])
+
+-- | Renders an accent combining character into a more readable form for error
+--   messages.
+showAccent :: Char -> String
+showAccent c
+  | c == combAcute = "acute"
+  | c == combGrave = "grave"
+  | c == combCirc  = "circumflex"
+  | otherwise      = error ("showAccent: invalid accent: " ++ [c])
+
+-- | Map a function over a list, then join the results into a comma-separated
+--   sequence.
+commaSepMap :: (a -> String) -> [a] -> String
+commaSepMap f xs = intercalate ", " (map f xs)
 
 -- | Parses a string to a Greek word.  All characters in input should be valid
 --   Greek, although the input doesn't have to be normalized.
