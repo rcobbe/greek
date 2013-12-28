@@ -1,6 +1,8 @@
-New since 2.0:
+New in 2.0.1:
 
   - Haddock improvements.
+
+  - Added Show instance for Data.Greek.Parser.ParseError.
 
 New in 2.0:
 

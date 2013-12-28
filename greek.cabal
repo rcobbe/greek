@@ -1,5 +1,5 @@
 Name:           greek
-Version:        2.0.0
+Version:        2.0.1
 Cabal-Version:  >= 1.14
 Author:         Richard Cobbe
 Synopsis:       Library for processing Greek text
