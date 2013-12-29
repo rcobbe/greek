@@ -6,6 +6,8 @@
 
 module Data.Greek.UnicodeData where
 
+-- XXX move allGreekChars to parser, since it's a property of the parser.
+
 import qualified Data.Set as Set
 
 -- Combining character definitions
