@@ -1,3 +1,7 @@
+New in 2.0.2:
+
+  - export allGreekChars from Data.Greek.UnicodeData.
+
 New in 2.0.1:
 
   - Haddock improvements.
