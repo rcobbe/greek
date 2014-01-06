@@ -1,3 +1,9 @@
+New since 2.1.0:
+
+  - Since Show instance for Data.Greek.Parser.ParseError generates
+    error msgs suitable for user & not serialization of Haskell data
+    representation, turn it into a normal function.
+
 New in 2.1.0:
 
   - export validInputChars from Data.Greek.Parser.

@@ -9,6 +9,7 @@
 --   \"_ά\" denotes a long alpha with an acute accent, but \"_ᾶ\" results in a
 --   parse error, because the macron is redundant with the circumflex.)
 module Data.Greek.Parser(ParseError(..),
+                         errorToString,
                          word,
                          letter,
                          literalWord,
@@ -78,10 +79,11 @@ data ParseError = EmptyInput
                   --   letter.
                 | InternalError { offset :: Int, msg :: String }
                   -- ^ General internal error; shouldn't happen.
-                deriving (Eq)
+                deriving (Eq, Show)
 
-instance Show ParseError where
-  show err = (offsetPrefix err) ++ (formatError err)
+-- | Generates string representation of error suitable for user-visible output.
+errorToString :: ParseError -> String
+errorToString err = (offsetPrefix err) ++ (formatError err)
 
 -- | Generates an "at offset N: " prefix for parser error messages, where
 --   appropriate.
