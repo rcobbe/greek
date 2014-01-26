@@ -1,8 +1,8 @@
-New since 2.1.0:
+New in 2.2.0:
 
   - Since Show instance for Data.Greek.Parser.ParseError generates
-    error msgs suitable for user & not serialization of Haskell data
-    representation, turn it into a normal function.
+    error msgs suitable for user and not serialization of Haskell data
+    representation, turn it into a normal function (errorToString).
 
 New in 2.1.0:
 
