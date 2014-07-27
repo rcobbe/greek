@@ -15,9 +15,9 @@ Description:    This package provides a representation of polytonic Greek letter
 Library
   Default-Language: Haskell2010
   Build-Depends:
-    base == 4.6.*,
+    base == 4.7.*,
     containers == 0.5.*,
-    exceptional == 0.2.*,
+    exceptional == 0.3.*,
     textual >= 1.1.0
   Ghc-options: -fwarn-incomplete-patterns
   Exposed-modules:
@@ -37,12 +37,12 @@ Test-Suite greek-tests
   default-language: Haskell2010
   Ghc-options: -fwarn-incomplete-patterns
   build-depends:
-    base == 4.6.*,
+    base == 4.7.*,
     containers == 0.5.*,
     greek,
-    exceptional == 0.2.*,
+    exceptional == 0.3.*,
     HUnit == 1.2.*,
-    QuickCheck == 2.6.*,
+    QuickCheck == 2.7.*,
     test-utils == 1.2.*,
-    text == 0.11.*,
+    text == 1.1.*,
     textual >= 1.1.0
