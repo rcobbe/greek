@@ -1,5 +1,6 @@
 module Test.Data.Greek.Parser(tests) where
 
+import Prelude hiding (Word)
 import qualified Control.Exceptional as CE
 import Control.Exceptional.HUnit
 import qualified Data.List as List

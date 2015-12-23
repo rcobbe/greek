@@ -13,6 +13,7 @@ module Data.Greek.Output(
   wordToLaTeX)
 where
 
+import Prelude hiding (Word)
 import Data.Textual (Textual)
 import qualified Data.Textual as Textual
 

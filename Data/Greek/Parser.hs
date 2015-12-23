@@ -16,6 +16,7 @@ module Data.Greek.Parser(ParseError(..),
                          literalLetter,
                          validInputChars) where
 
+import Prelude hiding (Word)
 import Control.Monad
 import qualified Data.List as List
 import Data.Map (Map)

@@ -13,6 +13,7 @@
 --   acceptable data.
 module Test.Data.Greek.Order(tests) where
 
+import Prelude hiding (Word)
 import qualified Data.Char as Char
 import Data.Map ((!), Map)
 import qualified Data.Map as Map
@@ -176,4 +177,3 @@ baseOrdering =
 -- | Returns base letters, with no diacriticals, downcased.
 getLowerBase :: Word -> [Char]
 getLowerBase w = map Char.toLower (map getBase (getLetters w))
-

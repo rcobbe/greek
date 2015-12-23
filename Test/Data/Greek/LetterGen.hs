@@ -2,6 +2,7 @@
 
 module Test.Data.Greek.LetterGen where
 
+import Prelude hiding (Word)
 import qualified Data.Char as Char
 import qualified Data.Set as Set
 import Test.QuickCheck

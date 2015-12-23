@@ -25,7 +25,7 @@ module Data.Greek.Word(
   )
 where
 
-import Prelude hiding (concat)
+import Prelude hiding (concat, Word)
 import qualified Data.Char as Char
 import Data.Function (on)
 import Data.List hiding (concat)

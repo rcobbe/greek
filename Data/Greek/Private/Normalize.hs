@@ -205,7 +205,7 @@ hasCirc c =
 
 -- | Recognizes chars in 'greekExtendedChars' that have dialytikas.
 hasDialytika :: Char -> Bool
-hasDialytika c = c `elem` "\x1fd2\x1fd3\x1fd7\x1fe2\x1fe3\x1fe7"
+hasDialytika c = c `elem` ("\x1fd2\x1fd3\x1fd7\x1fe2\x1fe3\x1fe7" :: String)
 
 -- | Computes the base character, with no precomposed combining diacriticals,
 --   for characters in 'greekExtendedChars'.

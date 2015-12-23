@@ -2,6 +2,7 @@
 
 module Test.Data.Greek.Output(tests) where
 
+import Prelude hiding (Word)
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as Text
 import Test.HUnit
