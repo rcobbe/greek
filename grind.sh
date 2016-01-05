@@ -1,6 +1,6 @@
 #!/bin/sh
 while true ; do
-    sleep 60
+    sleep 15
     cabal clean
     cabal configure --enable-tests
     cabal build
