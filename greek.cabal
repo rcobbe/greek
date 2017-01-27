@@ -17,7 +17,7 @@ Library
   Build-Depends:
     base == 4.8.*,
     containers == 0.5.*,
-    rcc-exceptional == 0.6.*,
+    transformers == 0.4.*,
     textual >= 1.1.0
   Ghc-options: -fwarn-incomplete-patterns
   Exposed-modules:
@@ -39,8 +39,8 @@ Test-Suite greek-tests
   build-depends:
     base == 4.8.*,
     containers == 0.5.*,
+    transformers == 0.4.*,
     greek,
-    rcc-exceptional == 0.6.*,
     HUnit == 1.5.*,
     QuickCheck == 2.9.*,
     test-utils == 1.4.*,

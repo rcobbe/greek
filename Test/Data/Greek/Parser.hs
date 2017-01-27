@@ -1,8 +1,10 @@
 module Test.Data.Greek.Parser(tests) where
 
 import Prelude hiding (Word)
-import qualified Control.Exceptional as CE
-import Control.Exceptional.HUnit
+
+import qualified Control.Monad as CM
+import Control.Monad.Trans.Except (Except, runExcept)
+
 import qualified Data.List as List
 import qualified Data.Set as Set
 
@@ -46,8 +48,8 @@ randomWordTests =
 
 propParseCorrect :: Word -> Bool
 propParseCorrect w =
-  CE.run (GP.word (Text.concat (map letterToUnicode (getLetters w))))
-  == Right w
+  runExcept (GP.word (Text.concat (map letterToUnicode (getLetters w))))
+    == Right w
 
 makeInput :: Macron -> Char -> Breathing -> Accent -> IotaSub -> String
 makeInput macron base breathing accent iotaSub =
@@ -133,3 +135,56 @@ allCombinations =
   List.partition valid' allCombinations
   where valid' (macron, base, breathing, accent, iotaSub) =
           validLetter macron base breathing accent iotaSub
+
+----------------------------------------------------------------------
+--
+-- asserts for exceptions
+--
+----------------------------------------------------------------------
+
+-- | Asserts that an 'Except' computation terminates with the indicated
+--   exception value
+assertExn :: (Eq e, Show e, Show a) =>
+             e          -- ^ expected exception
+          -> Except e a -- ^ actual computation
+          -> Assertion
+assertExn expectedExn exnComp =
+  case runExcept exnComp of
+    Left actualExn ->
+      CM.when (expectedExn /= actualExn) $
+        assertFailure ("expected exception "
+                       ++ show expectedExn
+                       ++ "; got exception "
+                       ++ show actualExn)
+    Right val ->
+      assertFailure ("expected exception "
+                     ++ show expectedExn
+                     ++ "; got actual result "
+                     ++ show val)
+
+-- | Asserts that an 'Except' computation terminates with an exception
+--   that satsifies the given assertion.
+assertExn' :: (Show a) => (e -> Assertion) -> Except e a -> Assertion
+assertExn' exnAssertion exnComp =
+  case runExcept exnComp of
+    Left actualExn ->
+      exnAssertion actualExn
+    Right val ->
+      assertFailure ("expected exception; got actual result " ++ show val)
+
+-- | Asserts that an 'Except' computation returns the indicated result
+--   rather than throwing.
+assertNoExn :: (Show e, Eq a, Show a) =>
+               a             -- ^ expected result
+               -> Except e a -- ^ actual computation
+               -> Assertion
+assertNoExn expectedVal exnComp =
+  assertNoExn' exnComp (\actualVal -> assertEqual "" expectedVal actualVal)
+
+-- | Asserts that an 'Except' computation returns a normal result that
+--   satisfies the supplied assertion.
+assertNoExn' :: (Show e) => Except e a -> (a -> Assertion) -> Assertion
+assertNoExn' exnComp resultAssertion =
+  case runExcept exnComp of
+    Left actualExn -> assertFailure ("uncaught exception: " ++ show actualExn)
+    Right val -> resultAssertion val
