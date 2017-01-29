@@ -70,25 +70,25 @@ normalize t =
         (rawCombChars, rest) = getCombiningChars chars
         dialytikaCombChars = Set.insert combDialytika rawCombChars
   in case char of
-    '\x03aa' ->
+    '\x03aa' ->  -- cap iota with dialytika
       Textual.append
         (normalizeChar capIota dialytikaCombChars)
         (normalize rest)
-    '\x03ab' ->
+    '\x03ab' ->  -- cap upsilon with dialytica
       Textual.append
         (normalizeChar capUpsilon dialytikaCombChars)
         (normalize rest)
-    '\x03ca' ->
+    '\x03ca' ->  -- lowercase iota with dialytika
       Textual.append
         (normalizeChar baseIota dialytikaCombChars)
         (normalize rest)
-    '\x03cb' ->
+    '\x03cb' ->  -- lowercase upsilon with dialytika
       Textual.append
         (normalizeChar baseUpsilon dialytikaCombChars)
         (normalize rest)
-    _ | char `member` baseChars ->
+    _ | char `member` baseChars ->   -- letter with no diacriticals
         Textual.append (normalizeChar char rawCombChars) (normalize rest)
-      | char `member` greekExtendedChars ->
+      | char `member` greekExtendedChars ->  -- letter w/ precomp. diacriticals
         Textual.append
           (normalizeChar
             (base char)
@@ -96,8 +96,9 @@ normalize t =
           (normalize rest)
       | otherwise -> Textual.cons char (normalize chars)
 
--- | Returns the maximal prefix of the input that contains only Greek
---   diacritical characters, as a set, and the rest of the input as a list.
+-- | Returns a set containing the characters from the longest prefix of the
+--   input that contains only Greek diacritical characters, and the
+--   rest of the input.
 getCombiningChars :: Textual a => a -> (Set Char, a)
 getCombiningChars chars =
   let (combiningChars, rest) = Textual.span isCombiningChar chars
