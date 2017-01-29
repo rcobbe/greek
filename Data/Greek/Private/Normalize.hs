@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf #-}
 
 -- | Normalization logic for polytonic Greek text in Unicode.  Using the ICU
 --   bindings doesn't work, for two reasons:
@@ -69,32 +69,34 @@ normalize t =
         chars = Textual.tail t
         (rawCombChars, rest) = getCombiningChars chars
         dialytikaCombChars = Set.insert combDialytika rawCombChars
-  in case char of
-    '\x03aa' ->  -- cap iota with dialytika
-      Textual.append
-        (normalizeChar capIota dialytikaCombChars)
-        (normalize rest)
-    '\x03ab' ->  -- cap upsilon with dialytica
-      Textual.append
-        (normalizeChar capUpsilon dialytikaCombChars)
-        (normalize rest)
-    '\x03ca' ->  -- lowercase iota with dialytika
-      Textual.append
-        (normalizeChar baseIota dialytikaCombChars)
-        (normalize rest)
-    '\x03cb' ->  -- lowercase upsilon with dialytika
-      Textual.append
-        (normalizeChar baseUpsilon dialytikaCombChars)
-        (normalize rest)
-    _ | char `member` baseChars ->   -- letter with no diacriticals
-        Textual.append (normalizeChar char rawCombChars) (normalize rest)
-      | char `member` greekExtendedChars ->  -- letter w/ precomp. diacriticals
-        Textual.append
-          (normalizeChar
-            (base char)
-            (Set.union (precomposedDiacriticals char) rawCombChars))
-          (normalize rest)
-      | otherwise -> Textual.cons char (normalize chars)
+    in
+      if
+        | char == '\x03aa' ->  -- cap iota with dialytika
+          Textual.append
+            (normalizeChar capIota dialytikaCombChars)
+            (normalize rest)
+        | char == '\x03ab' ->  -- cap upsilon with dialytica
+          Textual.append
+            (normalizeChar capUpsilon dialytikaCombChars)
+            (normalize rest)
+        | char == '\x03ca' ->  -- lowercase iota with dialytika
+          Textual.append
+            (normalizeChar baseIota dialytikaCombChars)
+            (normalize rest)
+        | char == '\x03cb' ->  -- lowercase upsilon with dialytika
+          Textual.append
+            (normalizeChar baseUpsilon dialytikaCombChars)
+            (normalize rest)
+        | char `member` baseChars ->   -- letter with no diacriticals
+          Textual.append (normalizeChar char rawCombChars) (normalize rest)
+        | char `member` greekExtendedChars ->
+          -- letter w/ precomp. diacriticals
+          Textual.append
+            (normalizeChar
+              (base char)
+              (Set.union (precomposedDiacriticals char) rawCombChars))
+            (normalize rest)
+        | otherwise -> Textual.cons char (normalize chars)
 
 -- | Returns a set containing the characters from the longest prefix of the
 --   input that contains only Greek diacritical characters, and the
@@ -175,27 +177,25 @@ greekExtendedChars =
 hasAcute :: Char -> Bool
 hasAcute c =
   let (sixteens, ones) = digits c
-  in case () of
-    _ | sixteens == 0x7            -> odd ones
-      | ones == 0x3                -> sixteens == 0xD || sixteens == 0xE
-      | ones == 0x4 || ones == 0x5 -> sixteens /= 0xE
-      | ones == 0x9                -> sixteens == 0xC || sixteens == 0xF
-      | ones == 0xB                -> sixteens >= 0xB
-      | ones == 0xC || ones == 0xD -> sixteens <= 0xA
-      | otherwise                  -> False
+  in if | sixteens == 0x7            -> odd ones
+        | ones == 0x3                -> sixteens == 0xD || sixteens == 0xE
+        | ones == 0x4 || ones == 0x5 -> sixteens /= 0xE
+        | ones == 0x9                -> sixteens == 0xC || sixteens == 0xF
+        | ones == 0xB                -> sixteens >= 0xB
+        | ones == 0xC || ones == 0xD -> sixteens <= 0xA
+        | otherwise                  -> False
 
 -- | Recognizes chars in 'greekExtendedChars' that have grave accents.
 hasGrave :: Char -> Bool
 hasGrave c =
   let (sixteens, ones) = digits c
-  in case () of
-    _ | sixteens == 0x7 -> even ones
-      | ones == 0x2     -> True
-      | ones == 0x3     -> sixteens <= 0xA
-      | ones == 0x8     -> sixteens == 0xC || sixteens == 0xF
-      | ones == 0xA     -> True
-      | ones == 0xB     -> sixteens <= 0xA
-      | otherwise       -> False
+  in if | sixteens == 0x7 -> even ones
+        | ones == 0x2     -> True
+        | ones == 0x3     -> sixteens <= 0xA
+        | ones == 0x8     -> sixteens == 0xC || sixteens == 0xF
+        | ones == 0xA     -> True
+        | ones == 0xB     -> sixteens <= 0xA
+        | otherwise       -> False
 
 -- | Recognizes chars in 'greekExtendedChars' that have circumflex accents.
 hasCirc :: Char -> Bool
