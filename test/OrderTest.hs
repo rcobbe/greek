@@ -11,7 +11,7 @@
 --   but it turns out to be so unlikely that the generator produces words that
 --   satisfy this constraint that the tests were failing due to lack of
 --   acceptable data.
-module Test.Data.Greek.Order(tests) where
+module OrderTest(tests) where
 
 import Prelude hiding (Word)
 import qualified Data.Char as Char
@@ -30,7 +30,7 @@ import Data.Greek.UnicodeData
 -- temporary
 -- import Greek.Parser
 
-import Test.Data.Greek.LetterGen
+import GreekLetterGen
 
 import Test.Utils
 

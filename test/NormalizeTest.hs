@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Test.Data.Greek.Normalize(tests) where
+module NormalizeTest(tests) where
 
 import Data.List (foldl')
 import Data.Set (Set)

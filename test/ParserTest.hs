@@ -1,4 +1,4 @@
-module Test.Data.Greek.Parser(tests) where
+module ParserTest(tests) where
 
 import Prelude hiding (Word)
 
@@ -13,7 +13,6 @@ import qualified Data.Text.Lazy as Text
 
 import Test.HUnit
 import qualified Test.QuickCheck as QC
-import Test.Data.Greek.LetterGen
 import Test.Utils
 
 import Data.Greek.Word
@@ -21,6 +20,7 @@ import qualified Data.Greek.Parser as GP
 import Data.Greek.Normalize
 import Data.Greek.Output
 import Data.Greek.UnicodeData
+import GreekLetterGen
 
 tests =
   "Greek.Parser" ~:

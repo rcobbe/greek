@@ -13,11 +13,11 @@ import Control.Monad
 import System.Exit
 import Test.HUnit
 
-import qualified Test.Data.Greek.Normalize
-import qualified Test.Data.Greek.Word
-import qualified Test.Data.Greek.Output
-import qualified Test.Data.Greek.Parser
-import qualified Test.Data.Greek.Order
+import qualified NormalizeTest
+import qualified WordTest
+import qualified OutputTest
+import qualified ParserTest
+import qualified OrderTest
 
 main :: IO ()
 main =
@@ -27,8 +27,8 @@ main =
 
 tests =
   "Greek" ~:
-  [Test.Data.Greek.Normalize.tests,
-   Test.Data.Greek.Word.tests,
-   Test.Data.Greek.Output.tests,
-   Test.Data.Greek.Parser.tests,
-   Test.Data.Greek.Order.tests]
+  [NormalizeTest.tests,
+   WordTest.tests,
+   OutputTest.tests,
+   ParserTest.tests,
+   OrderTest.tests]

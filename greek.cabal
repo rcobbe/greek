@@ -13,26 +13,26 @@ Category:       Data
 Description:    This package provides a representation of polytonic Greek letters and words, plus parsers and output renderers, as well as some basic utility functions on these data structures, like ordering.
 
 Library
+  hs-source-dirs: lib
   Default-Language: Haskell2010
   Build-Depends:
     base == 4.8.*,
     containers == 0.5.*,
     transformers == 0.4.*,
     textual >= 1.1.0
-  Ghc-options: -fwarn-incomplete-patterns
+  Ghc-options: -fwarn-incomplete-patterns -O2
   Exposed-modules:
     Data.Greek.Normalize,
     Data.Greek.Output,
     Data.Greek.Parser,
-    Data.Greek.UnicodeData
-    Data.Greek.Word
-  Other-modules:
-    -- Cabal has some magic to make private modules listed here available to
-    -- the test suite below, but not to other clients of the library.
+    Data.Greek.UnicodeData,
+    Data.Greek.Word,
+    -- expose for unit tests                    
     Data.Greek.Private.Normalize
 
 Test-Suite greek-tests
   main-is: RunTests.hs
+  hs-source-dirs: test
   type: exitcode-stdio-1.0
   default-language: Haskell2010
   Ghc-options: -fwarn-incomplete-patterns

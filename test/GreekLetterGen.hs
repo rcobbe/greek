@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Test.Data.Greek.LetterGen where
+module GreekLetterGen where
 
 import Prelude hiding (Word)
 import qualified Data.Char as Char

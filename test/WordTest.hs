@@ -1,9 +1,9 @@
-module Test.Data.Greek.Word(tests) where
+module WordTest(tests) where
 
 import Test.HUnit
 import qualified Test.QuickCheck as QC
 import Test.Utils
-import Test.Data.Greek.LetterGen
+import GreekLetterGen
 import Data.Greek.Word
 
 tests =

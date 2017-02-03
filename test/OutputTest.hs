@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Test.Data.Greek.Output(tests) where
+module OutputTest(tests) where
 
 import Prelude hiding (Word)
 import Data.Text.Lazy (Text)
