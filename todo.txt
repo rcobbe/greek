@@ -8,7 +8,7 @@ greekExtendedChars:
   - add comment identifying exceptions: holes in Unicode spec, standalone
     diacriticals, macron, vrachy.
 
-Move greekExtendedChars into UnicodeData
+Move greekExtendedChars into UnicodeData & flatten Normalize
 
 Limit GreekLetterGen's exports to types & ctors
 
