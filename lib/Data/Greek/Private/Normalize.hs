@@ -42,18 +42,21 @@ import Data.Greek.UnicodeData
 --   \\x0313, \\x0314, \\x0308, \\x0301, \\x0300, \\x0342, \\x0345 -- that is,
 --   smooth, rough, dieresis, acute, grave, circumflex, iota subscript.
 --
---   [Greek base character:] one of \\x0391-\\x03a9, \\x03b1-\\x03c9, \\x03dc,
---   \\x03de, \\x1f00-\\x1faf, \\x1fb2-\\x1fb7, \\x1fba-\\x1fbc,
---   \\x1fc2-\\x1fcc, \\x1fd2-\\x1fd7, \\x1fda-\\x1fdb, \\x1fe2-\\x1fe7,
---   \\x1fea-\\x1fec, or \\x1ff2-\\x1ffc (minus any of the reserved Unicode
---   code points in those ranges).
+--   [Greek base character:] a bare Greek letter, or one of \\x1f00-\\x1faf,
+--   \\x1fb2-\\x1fb7, \\x1fba-\\x1fbc, \\x1fc2-\\x1fcc, \\x1fd2-\\x1fd7,
+--   \\x1fda-\\x1fdb, \\x1fe2-\\x1fe7, \\x1fea-\\x1fec, or \\x1ff2-\\x1ffc
+--   (minus any of the reserved Unicode code points in those ranges).  Contains
+--   all Greek letters, with or without precomposed diacriticals, except
+--   for the macron or breve (vrachy) marks.
 --
 --   [Greek combining diacritical:] one of \\x0313 (smooth), \\x0314 (rough),
 --   \\x0308 (dialytika), \\x0301 (acute), \\x0300 (grave), \\x0342
 --   (circumflex), \\x0345 (iota subscript).
 --
 --   [Bare Greek letter:] one of \\x0391-\\x03a9, \\x03b1-\\x03c9, \\x03dc, or
---   \\x03de.
+--   \\x03dd, minus any of the reserved Unicode code points in those ranges.
+--   Contains all Greek letters, including digamma, without any precomposed
+--   diacriticals.)
 --
 --   This function makes no attempt to detect or report invalid combinations of
 --   diacriticals, including, e.g., multiple accent marks (whether distinct or
@@ -150,7 +153,9 @@ baseChars = Set.unions (map Set.fromList [[capAlpha .. capRho],
                                           [capDigamma, baseDigamma]])
 
 -- | Chars in the Greek Extended Unicode range that we treat specially during
---   normalization.
+--   normalization.  The holes in the ranges correspond to reserved Unicode
+--   code points, standalone diacriticals, or letters with a precomposed macron
+--   or breve mark (vrachy).
 greekExtendedChars :: Set Char
 greekExtendedChars =
   Set.unions (
