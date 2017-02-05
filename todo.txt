@@ -1,13 +1,3 @@
-Definition of Greek base character:
-  - replace first ranges with reference to Bare Greek Letter.  Might
-    explore also just saying \\x1f00-\\x1ffc minus exceptions.
-  - gloss as a Greek letter, with or without precomposed diacriticals,
-    *except* letters with precomposed macron or vrachy (breve/βραχυ)
-
-greekExtendedChars:
-  - add comment identifying exceptions: holes in Unicode spec, standalone
-    diacriticals, macron, vrachy.
-
 Move greekExtendedChars into UnicodeData & flatten Normalize
 
 Limit GreekLetterGen's exports to types & ctors
