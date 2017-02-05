@@ -8,7 +8,7 @@ import qualified Data.Set as Set
 import Data.Text.Lazy (Text, pack)
 import qualified Data.Text.Lazy as Text
 import Test.HUnit
-import Data.Greek.Private.Normalize
+import Data.Greek.Normalize
 import Data.Greek.UnicodeData
 
 tests =

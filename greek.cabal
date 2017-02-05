@@ -26,9 +26,7 @@ Library
     Data.Greek.Output,
     Data.Greek.Parser,
     Data.Greek.UnicodeData,
-    Data.Greek.Word,
-    -- expose for unit tests                    
-    Data.Greek.Private.Normalize
+    Data.Greek.Word
 
 Test-Suite greek-tests
   main-is: RunTests.hs
