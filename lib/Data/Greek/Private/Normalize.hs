@@ -152,32 +152,6 @@ baseChars = Set.unions (map Set.fromList [[capAlpha .. capRho],
                                           [baseAlpha .. baseOmega],
                                           [capDigamma, baseDigamma]])
 
--- | Chars in the Greek Extended Unicode range that we treat specially during
---   normalization.  The holes in the ranges correspond to reserved Unicode
---   code points, standalone diacriticals, or letters with a precomposed macron
---   or breve mark (vrachy).
-greekExtendedChars :: Set Char
-greekExtendedChars =
-  Set.unions (
-    map Set.fromList [
-       ['\x1f00'..'\x1f15'],
-       ['\x1f18'..'\x1f1d'],
-       ['\x1f20'..'\x1f45'],
-       ['\x1f48'..'\x1f4d'],
-       ['\x1f50'..'\x1f57'],
-       ['\x1f59', '\x1f5b', '\x1f5d', '\x1f5f'],
-       ['\x1f60'..'\x1f7d'],
-       ['\x1f80'..'\x1faf'],
-       ['\x1fb2'..'\x1fb4'],
-       ['\x1fb6', '\x1fb7', '\x1fba', '\x1fbb', '\x1fbc'],
-       ['\x1fc2', '\x1fc3', '\x1fc4'],
-       ['\x1fc6'..'\x1fcc'],
-       ['\x1fd2', '\x1fd3', '\x1fd6', '\x1fd7', '\x1fda', '\x1fdb'],
-       ['\x1fe2'..'\x1fe7'],
-       ['\x1fea'..'\x1fec'],
-       ['\x1ff2'..'\x1ff4'],
-       ['\x1ff6'..'\x1ffc']])
-
 -- | Recognizes characters in 'greekExtendedChars' that have acute accents.
 hasAcute :: Char -> Bool
 hasAcute c =
