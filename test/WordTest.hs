@@ -11,36 +11,37 @@ tests =
   [validityTests, caseTests, caseQCTests]
 
 validityTests = "validity" ~: [
-  "bare alpha" ~: validLetter NoMacron 'α' NoBreathing NoAccent NoIotaSub
-  ~?= True,
-  "bare beta" ~: validLetter NoMacron 'β' NoBreathing NoAccent NoIotaSub
-  ~?= True,
-  "bare rho" ~: validLetter NoMacron 'ρ' NoBreathing NoAccent NoIotaSub
-  ~?= True,
-  "rough rho" ~: validLetter NoMacron 'ρ' Rough NoAccent NoIotaSub ~?= True,
+  "bare alpha" ~:
+    assert (validLetter NoMacron 'α' NoBreathing NoAccent NoIotaSub),
+  "bare beta" ~:
+    assert (validLetter NoMacron 'β' NoBreathing NoAccent NoIotaSub),
+  "bare rho" ~:
+    assert (validLetter NoMacron 'ρ' NoBreathing NoAccent NoIotaSub),
+  "rough rho" ~:
+    assert (validLetter NoMacron 'ρ' Rough NoAccent NoIotaSub),
   "alpha: smooth acute iota sub" ~:
-  validLetter NoMacron 'α' Smooth Acute IotaSub ~?= True,
+    assert (validLetter NoMacron 'α' Smooth Acute IotaSub),
   "alpha: long circumflex" ~:
-  validLetter Macron 'α' NoBreathing Circumflex NoIotaSub ~?= False,
+    assertFalse (validLetter Macron 'α' NoBreathing Circumflex NoIotaSub),
   "alpha: long iota sub" ~:
-  validLetter Macron 'α' NoBreathing NoAccent IotaSub ~?= False,
+    assertFalse (validLetter Macron 'α' NoBreathing NoAccent IotaSub),
   "circumflex epsilon" ~:
-  validLetter NoMacron 'ε' NoBreathing Circumflex NoIotaSub ~?= False,
+    assertFalse (validLetter NoMacron 'ε' NoBreathing Circumflex NoIotaSub),
   "long epsilon" ~:
-  validLetter Macron 'ε' NoBreathing NoAccent NoIotaSub ~?= False,
+    assertFalse (validLetter Macron 'ε' NoBreathing NoAccent NoIotaSub),
   "epsilon iota-sub" ~:
-  validLetter NoMacron 'ε' NoBreathing NoAccent IotaSub ~?= False,
+    assertFalse (validLetter NoMacron 'ε' NoBreathing NoAccent IotaSub),
   "rho acute" ~:
-  validLetter NoMacron 'ρ' NoBreathing Acute IotaSub ~?= False]
+    assertFalse (validLetter NoMacron 'ρ' NoBreathing Acute IotaSub)]
 
 caseTests = "case functions" ~: [
-  "isUpper of capital" ~: isUpper capTheta ~?= True,
+  "isUpper of capital" ~: assert (isUpper capTheta),
 
-  "isUpper of lowercase" ~: isUpper lowercaseTheta ~?= False,
+  "isUpper of lowercase" ~: assertFalse (isUpper lowercaseTheta),
 
-  "isLower of capital" ~: isLower capTheta ~?= False,
+  "isLower of capital" ~: assertFalse (isLower capTheta),
 
-  "isLower of lowercase" ~: isLower lowercaseTheta ~?= True,
+  "isLower of lowercase" ~: assert (isLower lowercaseTheta),
 
   "toUpper of capital" ~: toUpper capTheta ~?= capTheta,
 
@@ -87,3 +88,5 @@ lowercaseTheta = makeLetter 'θ' NoBreathing NoAccent NoIotaSub NoMacron
 capSigma = makeLetter 'Σ' NoBreathing NoAccent NoIotaSub NoMacron
 medialSigma = makeLetter 'σ' NoBreathing NoAccent NoIotaSub NoMacron
 finalSigma = makeLetter 'ς' NoBreathing NoAccent NoIotaSub NoMacron
+
+assertFalse = assert . not
