@@ -1,6 +1,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module GreekLetterGen where
+module GreekLetterGen(
+  PrefixWords(..),
+  IotaSubWords(..),
+  BreathingWords(..),
+  AccentWords(..),
+  MacronWords(..),
+  CaseWords(..)
+  )
+where
 
 import Prelude hiding (Word)
 import qualified Data.Char as Char

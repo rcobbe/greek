@@ -1,5 +1,1 @@
-Move greekExtendedChars into UnicodeData & flatten Normalize
-
-Limit GreekLetterGen's exports to types & ctors
-
 In WordTest, replace ~?= True and ~?= False with appropriate assertions
