@@ -34,7 +34,7 @@ Library
     base == 4.8.*,
     containers == 0.5.*,
     transformers == 0.4.*,
-    textual >= 1.1.0
+    textual == 2.0.*
   Ghc-options: -fwarn-incomplete-patterns -O2
   Exposed-modules:
     Data.Greek.Normalize,
@@ -54,8 +54,8 @@ Test-Suite greek-tests
     containers == 0.5.*,
     transformers == 0.4.*,
     greek,
-    HUnit == 1.5.*,
+    HUnit == 1.6.*,
     QuickCheck == 2.9.*,
-    test-utils == 1.4.*,
+    test-utils == 1.5.*,
     text == 1.2.*,
-    textual >= 1.1.0
+    textual == 2.0.*
