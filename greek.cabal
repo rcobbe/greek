@@ -56,6 +56,6 @@ Test-Suite greek-tests
     greek,
     HUnit == 1.6.*,
     QuickCheck == 2.9.*,
-    test-utils == 1.5.*,
+    test-utils == 1.6.*,
     text == 1.2.*,
     textual == 2.0.*
