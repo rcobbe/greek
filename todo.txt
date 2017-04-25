@@ -1,1 +1,0 @@
-In WordTest, replace ~?= True and ~?= False with appropriate assertions
