@@ -270,9 +270,9 @@ caseCompare :: Letter -> Letter -> Ordering
 caseCompare c1 c2 =
   compare (isLower c1) (isLower c2)
 
--- | Combines several comparison operations, with earlier ones taking
---   precedence of later ones.  Equivalently, returns first non-'EQ' value, or
---   'EQ' if none found.
+-- | Combines several comparison operations, with earlier ones more significant
+--   than later ones.  Equivalently, returns first non-'EQ' value, or 'EQ' if
+--   none found.
 refineCompare :: [Ordering] -> Ordering
 refineCompare orderings =
   foldr refineOrderings EQ orderings
